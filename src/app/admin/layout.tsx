@@ -41,7 +41,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <header className="border-b border-line bg-paper">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link href="/admin" className="font-display text-xl font-bold tracking-tight">
-            Review QR
+            Semsorted
           </Link>
           <SignOut />
         </div>

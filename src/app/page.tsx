@@ -4,7 +4,7 @@ import { Check, Star } from "lucide-react";
 const STEPS = [
   ["Scan", "A customer scans the QR code at your counter. No app or login."],
   ["Tap", "They choose a rating and 2 to 4 things they noticed."],
-  ["Post", "AI writes a draft. They edit it, copy it, and post it on Google."],
+  ["Post", "A draft appears instantly. They edit it, copy it, and post it on Google."],
 ];
 
 const PROMISES = [
@@ -25,7 +25,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-dvh overflow-x-clip">
       <header className="mx-auto flex h-20 max-w-6xl items-center px-5">
-        <span className="font-display text-xl font-bold tracking-tight">Review QR</span>
+        <span className="font-display text-xl font-bold tracking-tight">Semsorted</span>
       </header>
 
       <main>
@@ -102,7 +102,7 @@ export default function LandingPage() {
 
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <span className="font-display font-bold">Review QR</span>
+          <span className="font-display font-bold">Semsorted</span>
           <Link href="/login" className="inline-flex min-h-11 items-center text-sm font-semibold text-moss hover:text-ink">
             Admin sign in
           </Link>

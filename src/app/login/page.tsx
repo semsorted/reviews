@@ -68,7 +68,7 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 py-10">
       <Link href="/" className="font-display text-xl font-bold tracking-tight">
-        Review QR
+        Semsorted
       </Link>
       <h1 className="mt-10 text-[2.35rem] font-bold">Admin sign in</h1>
       <p className="mt-2 text-moss">Manage shops, chips, and QR codes.</p>

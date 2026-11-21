@@ -1,13 +1,15 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-
 export default function ReviewError({ retry }: { error: unknown; retry: () => void }) {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-[30rem] flex-col items-start justify-center px-5">
-      <h1 className="text-[2.35rem] font-bold">This page did not load</h1>
-      <p className="mb-6 mt-3 text-moss">Check your connection and try again.</p>
-      <Button onClick={() => retry()}>Try again</Button>
+    <main className="review-surface flex min-h-dvh flex-col justify-center bg-white px-5 text-review-ink">
+      <div className="mx-auto w-full max-w-[28rem]">
+        <h1 className="text-2xl font-medium">This page did not load</h1>
+        <p className="mb-5 mt-2 text-review-muted">Check your connection and try again.</p>
+        <button type="button" onClick={() => retry()} className="min-h-11 rounded-full bg-review-blue px-5 font-medium text-white">
+          Try again
+        </button>
+      </div>
     </main>
   );
 }

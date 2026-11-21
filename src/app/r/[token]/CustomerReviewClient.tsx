@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { Check, ExternalLink, RefreshCw, Star } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Check, RefreshCw, Star } from "lucide-react";
+import type { ReviewLanguage } from "@/lib/ai/provider.interface";
 import { copyDraft, copyViaCommand } from "@/lib/reviews/copy-draft";
+import { seededRandom, writeInstantDraft } from "@/lib/reviews/instant-draft";
 import { MAX_CHIPS, MIN_CHIPS } from "@/lib/reviews/rules";
 import { cn } from "@/lib/utils";
 
 export interface CustomerReviewClientProps {
   token: string;
   sessionId: string;
+  language: ReviewLanguage;
   shop: {
     name: string;
     businessCategory: string;
@@ -21,77 +23,102 @@ export interface CustomerReviewClientProps {
 }
 
 const RATING_WORDS = ["", "Poor", "Below average", "Okay", "Good", "Excellent"];
+const actionClass =
+  "flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-5 text-base font-medium";
 
 function monogramTextColor(hex: string) {
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-  return 0.299 * r + 0.587 * g + 0.114 * b > 160 ? "#14211d" : "#ffffff";
+  return 0.299 * r + 0.587 * g + 0.114 * b > 160 ? "#1f2328" : "#ffffff";
 }
 
-export default function CustomerReviewClient({ token, sessionId, shop, chips }: CustomerReviewClientProps) {
+export default function CustomerReviewClient({ token, sessionId, language, shop, chips }: CustomerReviewClientProps) {
   const [rating, setRating] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
-  const [draft, setDraft] = useState<{ id: string; key: string } | null>(null);
   const [draftText, setDraftText] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [variant, setVariant] = useState(0);
+  const [isEdited, setIsEdited] = useState(false);
+  const [isStale, setIsStale] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "manual">("idle");
-  const slipRef = useRef<HTMLElement>(null);
+  const recordRef = useRef<Promise<string | null> | null>(null);
+  const draftRef = useRef<HTMLElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
+  const didRevealDraft = useRef(false);
 
-  const selectionKey = `${rating}:${[...selected].sort().join(",")}`;
-  const canGenerate = rating > 0 && selected.length >= MIN_CHIPS;
-  const hasDraft = Boolean(draft) && draftText.trim().length > 0;
-  const isDraftCurrent = draft?.key === selectionKey;
+  const hasDraft = draftText.trim().length > 0;
+  const isReady = rating > 0 && selected.length >= MIN_CHIPS;
   const atLimit = selected.length >= MAX_CHIPS;
 
   useEffect(() => {
-    if (!draft) return;
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    slipRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
-  }, [draft]);
+    if (!hasDraft || didRevealDraft.current) return;
+    didRevealDraft.current = true;
+    draftRef.current?.scrollIntoView({ block: "nearest" });
+  }, [hasDraft]);
 
-  const track = (eventType: "copy_click" | "regenerate_click" | "google_review_click") => {
-    void fetch("/api/analytics/event", {
+  const writeDraft = (nextRating: number, nextSelected: string[], nextVariant: number) =>
+    writeInstantDraft(
+      {
+        shopName: shop.name,
+        rating: nextRating,
+        chips: nextSelected.map((id) => chips.find((chip) => chip.id === id)!.label),
+        language,
+      },
+      seededRandom(`${sessionId}:${nextVariant}`)
+    );
+
+  // Stats run in the background and can never delay or block the customer.
+  const recordDraft = (nextRating: number, nextSelected: string[]) => {
+    recordRef.current ??= fetch("/api/review/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       keepalive: true,
-      body: JSON.stringify({ token, sessionId, eventType, draftId: draft?.id }),
-    }).catch(() => {});
+      body: JSON.stringify({ token, sessionId, rating: nextRating, chipIds: nextSelected }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data?.draftId ?? null)
+      .catch(() => null);
+  };
+
+  const track = (eventType: "copy_click" | "regenerate_click" | "google_review_click") => {
+    void (recordRef.current ?? Promise.resolve(null))
+      .then((draftId) =>
+        fetch("/api/analytics/event", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          keepalive: true,
+          body: JSON.stringify({ token, sessionId, eventType, draftId: draftId ?? undefined }),
+        })
+      )
+      .catch(() => {});
+  };
+
+  const applySelection = (nextRating: number, nextSelected: string[]) => {
+    setRating(nextRating);
+    setSelected(nextSelected);
+    setCopyState("idle");
+    if (isEdited) {
+      setIsStale(true);
+      return;
+    }
+    const ready = nextRating > 0 && nextSelected.length >= MIN_CHIPS;
+    setDraftText(ready ? writeDraft(nextRating, nextSelected, variant) : "");
+    if (ready) recordDraft(nextRating, nextSelected);
   };
 
   const toggleChip = (id: string) => {
-    setCopyState("idle");
-    setSelected((current) => {
-      if (current.includes(id)) return current.filter((chipId) => chipId !== id);
-      return current.length >= MAX_CHIPS ? current : [...current, id];
-    });
+    if (selected.includes(id)) applySelection(rating, selected.filter((chipId) => chipId !== id));
+    else if (!atLimit) applySelection(rating, [...selected, id]);
   };
 
-  const generate = async (isRegeneration = false) => {
-    if (!canGenerate || isLoading) return;
-    setIsLoading(true);
-    setError(null);
+  const changeWording = () => {
+    if (!isReady) return;
+    const nextVariant = variant + 1;
+    setVariant(nextVariant);
+    setDraftText(writeDraft(rating, selected, nextVariant));
+    setIsEdited(false);
+    setIsStale(false);
     setCopyState("idle");
-    if (isRegeneration) track("regenerate_click");
-
-    try {
-      const res = await fetch("/api/review/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, sessionId, rating, chipIds: selected }),
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.draftText) {
-        setError(data?.error ?? "Could not write your review. Try again.");
-        return;
-      }
-      setDraft({ id: data.draftId, key: selectionKey });
-      setDraftText(data.draftText);
-    } catch {
-      setError("No connection. Check your internet and try again.");
-    } finally {
-      setIsLoading(false);
-    }
+    recordDraft(rating, selected);
+    track("regenerate_click");
   };
 
   const selectDraft = () => {
@@ -120,71 +147,79 @@ export default function CustomerReviewClient({ token, sessionId, shop, chips }: 
     });
   };
 
+  const hint =
+    copyState === "manual"
+      ? "Copy the selected text, then paste it on Google."
+      : copyState === "copied"
+        ? "Copied. Paste it on Google and tap Post."
+        : hasDraft
+          ? "Google opens next. Paste your review and post it."
+          : rating === 0
+            ? "Tap a star to start."
+            : `Pick ${Math.max(MIN_CHIPS - selected.length, 1)} more to write your review.`;
+
   return (
-    <div className="min-h-dvh bg-mist">
-      <main className="mx-auto w-full max-w-[30rem] px-5 pb-44 pt-6">
+    <div className="review-surface min-h-dvh bg-white text-review-ink">
+      <main className="mx-auto w-full max-w-[28rem] px-5 pb-44 pt-5">
         <header className="flex items-center gap-3">
           {shop.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={shop.logoUrl} alt="" className="size-12 rounded-xl bg-paper object-cover" />
+            <img src={shop.logoUrl} alt="" className="size-11 rounded-full object-cover" />
           ) : (
             <div
               aria-hidden
-              className="flex size-12 items-center justify-center rounded-xl font-display text-xl font-bold"
+              className="flex size-11 shrink-0 items-center justify-center rounded-full text-lg font-medium"
               style={{ backgroundColor: shop.primaryColor, color: monogramTextColor(shop.primaryColor) }}
             >
               {shop.name.charAt(0).toUpperCase()}
             </div>
           )}
           <div className="min-w-0">
-            <p className="truncate font-semibold leading-tight">{shop.name}</p>
-            <p className="truncate text-sm leading-tight text-moss">{shop.businessCategory}</p>
+            <h1 className="truncate text-[1.0625rem] font-medium">{shop.name}</h1>
+            <p className="truncate text-sm text-review-muted">{shop.businessCategory}</p>
           </div>
         </header>
 
-        <fieldset className="mt-9">
+        <fieldset className="mt-5 border-t border-review-line pt-6 text-center">
           <legend className="contents">
-            <h1 className="text-[2.35rem] font-bold">How was your visit?</h1>
+            <h2 className="text-lg font-medium">How was your visit?</h2>
           </legend>
-          <div className="-ml-1.5 mt-4 flex items-center">
+          <div className="mt-3 flex justify-center">
             {[1, 2, 3, 4, 5].map((value) => (
-              <label key={value} className="flex size-12 cursor-pointer items-center justify-center rounded-lg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-pine">
+              <label
+                key={value}
+                className="flex size-13 cursor-pointer items-center justify-center rounded-full has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-review-blue"
+              >
                 <input
                   type="radio"
                   name="rating"
                   value={value}
                   checked={rating === value}
-                  onChange={() => {
-                    setRating(value);
-                    setCopyState("idle");
-                  }}
+                  onChange={() => applySelection(value, selected)}
                   className="sr-only"
                   aria-label={`${value} out of 5, ${RATING_WORDS[value]}`}
                 />
                 <Star
                   aria-hidden
-                  strokeWidth={1.75}
-                  className={cn(
-                    "size-9 transition-colors",
-                    value <= rating ? "fill-marigold text-marigold" : "fill-transparent text-moss/50"
-                  )}
+                  strokeWidth={1.5}
+                  className={cn("size-10", value <= rating ? "fill-review-star text-review-star" : "fill-transparent text-review-muted/60")}
                 />
               </label>
             ))}
-            <span aria-live="polite" className="ml-2 font-semibold text-moss">
-              {RATING_WORDS[rating]}
-            </span>
           </div>
+          <p aria-live="polite" className="mt-1 h-6 text-sm text-review-muted">
+            {RATING_WORDS[rating]}
+          </p>
         </fieldset>
 
-        <fieldset className="mt-8">
+        <fieldset className="mt-4">
           <legend className="contents">
-            <h2 className="text-xl font-semibold">{rating > 0 && rating <= 2 ? "What should improve?" : "What stood out?"}</h2>
+            <h2 className="font-medium">{rating > 0 && rating <= 2 ? "What should improve?" : "What stood out?"}</h2>
           </legend>
-          <p className="mt-1 text-sm text-moss" aria-live="polite">
-            {atLimit ? `You picked ${MAX_CHIPS}. Remove one to change it.` : `Pick ${MIN_CHIPS} to ${MAX_CHIPS}.`}
+          <p className="mt-0.5 text-sm text-review-muted" aria-live="polite">
+            {atLimit ? `You picked ${MAX_CHIPS}. Remove one to change it.` : `Pick ${MIN_CHIPS} to ${MAX_CHIPS}`}
           </p>
-          <div className="mt-3.5 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             {chips.map((chip) => {
               const isSelected = selected.includes(chip.id);
               const isDisabled = atLimit && !isSelected;
@@ -192,18 +227,12 @@ export default function CustomerReviewClient({ token, sessionId, shop, chips }: 
                 <label
                   key={chip.id}
                   className={cn(
-                    "inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border px-4 font-medium transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-pine",
-                    isSelected ? "border-pine bg-pine text-white" : "border-line bg-paper text-ink hover:border-pine",
-                    isDisabled && "cursor-not-allowed opacity-45 hover:border-line"
+                    "inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg border px-3.5 text-[0.9375rem] font-medium has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-review-blue",
+                    isSelected ? "border-review-tint bg-review-tint text-review-blue" : "border-review-line bg-white",
+                    isDisabled && "cursor-not-allowed opacity-40"
                   )}
                 >
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    disabled={isDisabled}
-                    onChange={() => toggleChip(chip.id)}
-                    className="sr-only"
-                  />
+                  <input type="checkbox" checked={isSelected} disabled={isDisabled} onChange={() => toggleChip(chip.id)} className="sr-only" />
                   {isSelected && <Check aria-hidden className="size-4" strokeWidth={2.5} />}
                   {chip.label}
                 </label>
@@ -212,32 +241,22 @@ export default function CustomerReviewClient({ token, sessionId, shop, chips }: 
           </div>
         </fieldset>
 
-        {error && (
-          <p role="alert" className="mt-5 text-sm font-medium text-danger">
-            {error}
-          </p>
-        )}
-
-        {draft && (
-          <section ref={slipRef} aria-labelledby="draft-title" className="slip mt-8 scroll-mt-6">
-            <div className="flex items-center justify-between gap-2 px-4 pt-3">
-              <h2 id="draft-title" className="text-lg font-semibold">
+        {hasDraft && (
+          <section ref={draftRef} className="mt-6 scroll-mb-44">
+            <div className="flex items-center justify-between gap-2">
+              <label htmlFor="draft" className="font-medium">
                 Your review
-              </h2>
+              </label>
               <button
                 type="button"
-                onClick={() => generate(true)}
-                disabled={isLoading || !canGenerate}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-2 text-sm font-semibold text-pine disabled:opacity-45"
+                onClick={changeWording}
+                disabled={!isReady}
+                className="-mr-2 inline-flex min-h-11 items-center gap-1.5 rounded-full px-2 text-sm font-medium text-review-blue disabled:opacity-40"
               >
-                <RefreshCw aria-hidden className={cn("size-4", isLoading && "animate-spin motion-reduce:animate-none")} />
-                {isDraftCurrent ? "Rewrite" : "Update"}
+                <RefreshCw aria-hidden className="size-4" />
+                {isStale ? "Update" : "Change wording"}
               </button>
             </div>
-            <div className="mx-4 border-t border-dashed border-line" />
-            <label htmlFor="draft" className="sr-only">
-              Edit your review
-            </label>
             <textarea
               id="draft"
               ref={textRef}
@@ -246,42 +265,39 @@ export default function CustomerReviewClient({ token, sessionId, shop, chips }: 
               rows={4}
               onChange={(event) => {
                 setDraftText(event.target.value);
+                setIsEdited(event.target.value.trim().length > 0);
                 setCopyState("idle");
               }}
-              className="slip-text block max-h-72 w-full resize-none bg-transparent px-4 py-3 text-[1.05rem] leading-relaxed outline-none"
+              className="slip-text mt-1 block max-h-72 w-full resize-none rounded-lg border border-review-line bg-white p-3.5 text-base leading-relaxed outline-none focus:border-review-blue focus:ring-1 focus:ring-review-blue"
             />
-            <p className="px-4 text-sm text-moss">
-              {isDraftCurrent ? "Change anything so it sounds like you." : "Your choices changed. Tap Update to match them."}
+            <p className="mt-1.5 text-sm text-review-muted">
+              {isStale ? "Your choices changed. Tap Update to match them." : "Edit anything so it sounds like you."}
             </p>
           </section>
         )}
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-line bg-mist/95 pb-[max(0.875rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm">
-        <div className="mx-auto w-full max-w-[30rem] px-5">
+      <div className="fixed inset-x-0 bottom-0 border-t border-review-line bg-white pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+        <div className="mx-auto w-full max-w-[28rem] px-5">
           {hasDraft ? (
-            <>
-              <a
-                href={shop.googleReviewUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={copyAndContinue}
-                className={cn(buttonVariants({ size: "lg" }))}
-              >
-                {copyState === "copied" ? <Check aria-hidden className="size-5" /> : <ExternalLink aria-hidden className="size-5" />}
-                {copyState === "copied" ? "Copied. Open Google" : copyState === "manual" ? "Open Google" : "Copy & Next"}
-              </a>
-              <p role="status" className="mt-1.5 text-center text-sm text-moss">
-                {copyState === "manual"
-                  ? "Copy the selected text, then paste it on Google."
-                  : "On Google, tap your stars, paste, and post."}
-              </p>
-            </>
+            <a
+              href={shop.googleReviewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={copyAndContinue}
+              className={cn(actionClass, "bg-review-blue text-white")}
+            >
+              {copyState === "copied" && <Check aria-hidden className="size-5" />}
+              {copyState === "copied" ? "Copied. Open Google" : copyState === "manual" ? "Open Google" : "Copy & Next"}
+            </a>
           ) : (
-            <Button size="lg" onClick={() => generate()} disabled={!canGenerate} isLoading={isLoading}>
-              {isLoading ? "Writing your review" : draft ? "Update my review" : "Write my review"}
-            </Button>
+            <button type="button" disabled className={cn(actionClass, "bg-review-line/70 text-review-muted")}>
+              Copy &amp; Next
+            </button>
           )}
+          <p role="status" className="mt-1.5 text-center text-sm text-review-muted">
+            {hint}
+          </p>
         </div>
       </div>
     </div>

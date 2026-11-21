@@ -1,12 +1,12 @@
-# Review QR
+# Semsorted
 
-Review QR helps shop customers write and post an honest Google review from a QR code.
+Semsorted helps shop customers write and post an honest Google review from a QR code.
 
-An admin creates each shop, its review chips, and its QR codes. A customer scans the code, picks a star rating and 2 to 4 chips, edits the AI draft, copies it, and posts it on the shop's Google review page.
+An admin creates each shop, its review chips, and its QR codes. A customer scans the code, picks a star rating and 2 to 4 chips, edits the instant draft, copies it, and posts it on the shop's Google review page.
 
 ## Stack
 
-Next.js 16, React 19, Tailwind CSS 4, Prisma 7, Supabase Auth and Postgres, Gemini or OpenAI, and Vitest.
+Next.js 16, React 19, Tailwind CSS 4, Prisma 7, Supabase Auth and Postgres, and Vitest.
 
 ## Setup
 
@@ -25,10 +25,6 @@ Next.js 16, React 19, Tailwind CSS 4, Prisma 7, Supabase Auth and Postgres, Gemi
    | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase public key |
    | `DATABASE_URL` | Yes | Supabase Postgres connection string |
-   | `GEMINI_API_KEY` or `OPENAI_API_KEY` | One of them | AI provider key |
-   | `GEMINI_MODEL`, `OPENAI_MODEL` | No | Override the default model |
-   | `DEFAULT_AI_PROVIDER` | No | `gemini` or `openai` |
-   | `ENABLE_AI_FALLBACK` | No | Set to `false` to disable provider fallback |
 
 3. Run both SQL files in `supabase/migrations/`, oldest first, using the Supabase SQL editor or CLI.
 
@@ -63,7 +59,7 @@ Next.js 16, React 19, Tailwind CSS 4, Prisma 7, Supabase Auth and Postgres, Gemi
 - Set `NEXT_PUBLIC_APP_URL` to the final domain before printing QR codes. Printed codes keep the URL they were downloaded with.
 - `npm run build` generates the Prisma client.
 - Use an HTTPS domain and a database URL with `sslmode`. For full certificate checks, use `sslmode=verify-full` with Supabase's CA certificate.
-- Add edge rate limits for `/r/*`, `/api/review/generate`, and `/api/analytics/event` in your host or CDN, about 30 requests per minute per IP. The app caps AI spend itself, but it cannot stop a script from creating scan records.
+- Add edge rate limits for `/r/*`, `/api/review/generate`, and `/api/analytics/event` in your host or CDN, about 30 requests per minute per IP. The app cannot stop a script from creating scan records by itself.
 
 ## Checks
 
@@ -76,4 +72,4 @@ npm run build
 
 ## Review policy
 
-Customers choose their own rating and post the review themselves. Every rating gets the same path to Google, and drafts use only the rating and chips the customer selected. AI-assisted reviews can still draw scrutiny from Google, so keep chips neutral and never pressure customers or offer rewards for reviews.
+Customers choose their own rating and post the review themselves. Every rating gets the same path to Google, and drafts use only the rating and chips the customer selected. Suggested drafts can still draw scrutiny from Google, so keep chips neutral and never pressure customers or offer rewards for reviews.

@@ -134,8 +134,8 @@ describe("assertProductionEnv", () => {
     expect(() => assertProductionEnv({ ...complete, DATABASE_URL: "" })).toThrow("DATABASE_URL");
   });
 
-  it("requires at least one AI key", () => {
-    expect(() => assertProductionEnv({ ...complete, GEMINI_API_KEY: undefined })).toThrow("GEMINI_API_KEY");
+  it("does not need an AI key", () => {
+    expect(() => assertProductionEnv({ ...complete, GEMINI_API_KEY: undefined })).not.toThrow();
   });
 
   it.each(["http://reviews.example.com", "https://localhost:3000", "https://127.0.0.1", "not a url"])(

@@ -6,6 +6,7 @@ const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
   variable: "--font-bricolage",
   display: "swap",
+  preload: false,
 });
 
 const mukta = Mukta({
@@ -13,10 +14,11 @@ const mukta = Mukta({
   weight: ["400", "500", "600", "700"],
   variable: "--font-mukta",
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
-  title: "Review QR",
+  title: "Semsorted",
   description: "A simple way for shop customers to write and post an honest Google review.",
 };
 

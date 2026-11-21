@@ -1,10 +1,15 @@
+import { randomUUID } from "node:crypto";
 import { cache } from "react";
+import { after } from "next/server";
 import { notFound } from "next/navigation";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { prisma } from "@/lib/prisma";
+import { toReviewLanguage } from "@/lib/reviews/instant-draft";
 import { MIN_CHIPS } from "@/lib/reviews/rules";
 import { generateToken } from "@/lib/utils";
 import CustomerReviewClient from "./CustomerReviewClient";
+
+export const viewport: Viewport = { themeColor: "#ffffff" };
 
 const getReviewQr = cache(async (token: string) => {
   const qr = await prisma.qrCode.findUnique({
@@ -20,6 +25,7 @@ const getReviewQr = cache(async (token: string) => {
           logoUrl: true,
           primaryColor: true,
           googleReviewUrl: true,
+          defaultLanguage: true,
           isActive: true,
           chips: {
             where: { isActive: true },
@@ -47,29 +53,31 @@ export default async function CustomerReviewPage(props: { params: Promise<{ toke
   const qr = await getReviewQr(token);
   if (!qr) notFound();
 
-  const session = await prisma.$transaction(async (tx) => {
-    await tx.qrCode.update({ where: { id: qr.id }, data: { scanCount: { increment: 1 } } });
-    const created = await tx.reviewSession.create({
-      data: { shopId: qr.shop.id, qrCodeId: qr.id, anonymousSessionId: `anon_${generateToken(18)}` },
-      select: { id: true },
-    });
-    await tx.analyticsEvent.createMany({
-      data: ["qr_scan", "page_view"].map((eventType) => ({
-        shopId: qr.shop.id,
-        qrCodeId: qr.id,
-        sessionId: created.id,
-        eventType,
-      })),
-    });
-    return created;
-  });
+  const sessionId = randomUUID();
+  const { id: qrCodeId, shop } = qr;
 
-  const { chips, ...shop } = qr.shop;
+  // Stats are saved after the response, so the customer never waits for them.
+  after(async () => {
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.qrCode.update({ where: { id: qrCodeId }, data: { scanCount: { increment: 1 } } });
+        await tx.reviewSession.create({
+          data: { id: sessionId, shopId: shop.id, qrCodeId, anonymousSessionId: `anon_${generateToken(18)}` },
+        });
+        await tx.analyticsEvent.createMany({
+          data: ["qr_scan", "page_view"].map((eventType) => ({ shopId: shop.id, qrCodeId, sessionId, eventType })),
+        });
+      });
+    } catch (error) {
+      console.error("[Review:Scan] Could not record scan", error);
+    }
+  });
 
   return (
     <CustomerReviewClient
       token={token}
-      sessionId={session.id}
+      sessionId={sessionId}
+      language={toReviewLanguage(shop.defaultLanguage)}
       shop={{
         name: shop.name,
         businessCategory: shop.businessCategory,
@@ -77,7 +85,7 @@ export default async function CustomerReviewPage(props: { params: Promise<{ toke
         primaryColor: shop.primaryColor,
         googleReviewUrl: shop.googleReviewUrl,
       }}
-      chips={chips}
+      chips={shop.chips}
     />
   );
 }

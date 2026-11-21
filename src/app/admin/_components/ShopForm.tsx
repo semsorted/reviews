@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { chipsForShopType, isCatalogShopType, SHOP_TYPE_GROUPS, SHOP_TYPES } from "@/lib/reviews/catalog";
 import { MAX_ACTIVE_CHIPS, MIN_CHIPS } from "@/lib/reviews/rules";
 import { ConfirmButton } from "./ConfirmButton";
 import { adminRequest } from "./request";
@@ -21,6 +22,8 @@ export interface ShopFormValues {
   isActive?: boolean;
 }
 
+const OTHER_TYPE = "__other";
+
 const EMPTY: ShopFormValues = {
   name: "",
   businessCategory: "",
@@ -33,6 +36,7 @@ const EMPTY: ShopFormValues = {
 export function ShopForm({ shop }: { shop?: ShopFormValues }) {
   const router = useRouter();
   const [values, setValues] = useState<ShopFormValues>(shop ?? EMPTY);
+  const [isOtherType, setIsOtherType] = useState(Boolean(shop) && !isCatalogShopType(shop?.businessCategory ?? ""));
   const [chips, setChips] = useState<string[]>([]);
   const [chipDraft, setChipDraft] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -42,6 +46,14 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
   const update = (key: keyof ShopFormValues, value: string) => {
     setSaved(false);
     setValues((current) => ({ ...current, [key]: value }));
+  };
+
+  const chooseShopType = (value: string) => {
+    const isOther = value === OTHER_TYPE;
+    setIsOtherType(isOther);
+    update("businessCategory", isOther ? "" : value);
+    setError(null);
+    if (!shop) setChips(value ? chipsForShopType(isOther ? "" : value) : []);
   };
 
   const addChip = () => {
@@ -126,8 +138,38 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
         <Input id="name" required minLength={2} maxLength={80} value={values.name} onChange={(e) => update("name", e.target.value)} />
       </div>
       <div>
-        <Label htmlFor="category">Business type</Label>
-        <Input id="category" required minLength={2} maxLength={60} placeholder="Tea house and bakery" value={values.businessCategory} onChange={(e) => update("businessCategory", e.target.value)} />
+        <Label htmlFor="shop-type">Shop type</Label>
+        <select
+          id="shop-type"
+          required
+          value={isOtherType ? OTHER_TYPE : values.businessCategory}
+          onChange={(e) => chooseShopType(e.target.value)}
+          className="block min-h-11 w-full rounded-lg border border-line bg-paper px-3 text-base"
+        >
+          <option value="">Choose a shop type</option>
+          {SHOP_TYPE_GROUPS.map((group) => (
+            <optgroup key={group} label={group}>
+              {SHOP_TYPES.filter((type) => type.group === group).map((type) => (
+                <option key={type.label} value={type.label}>
+                  {type.label}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+          <option value={OTHER_TYPE}>Other</option>
+        </select>
+        {isOtherType && (
+          <Input
+            aria-label="Your shop type"
+            required
+            minLength={2}
+            maxLength={60}
+            placeholder="Type your business"
+            value={values.businessCategory}
+            onChange={(e) => update("businessCategory", e.target.value)}
+            className="mt-2"
+          />
+        )}
       </div>
       <div>
         <Label htmlFor="google">Google review link</Label>
@@ -167,13 +209,14 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
       {!shop && (
         <div>
           <Label htmlFor="chip">Chips customers can tap</Label>
+          {chips.length > 0 && <p className="mb-2 text-sm text-moss">Ready for this shop type. Remove any or add your own.</p>}
           <div className="flex gap-2">
-            <Input id="chip" maxLength={40} placeholder="Friendly staff" value={chipDraft} onChange={(e) => setChipDraft(e.target.value)} onKeyDown={onChipKey} />
+            <Input id="chip" maxLength={40} placeholder="Add a chip" value={chipDraft} onChange={(e) => setChipDraft(e.target.value)} onKeyDown={onChipKey} />
             <Button type="button" variant="outline" onClick={addChip}>
               Add
             </Button>
           </div>
-          <p className="mt-1 text-sm text-moss">Add at least {MIN_CHIPS}. Use neutral topics like Service, Taste, or Price.</p>
+          {chips.length === 0 && <p className="mt-1 text-sm text-moss">Choose a shop type to fill these automatically.</p>}
           {chips.length > 0 && (
             <ul className="mt-3 flex flex-wrap gap-2">
               {chips.map((chip) => (

@@ -7,6 +7,7 @@ import {
 import { OpenAIProvider } from "./openai.provider";
 import { GeminiProvider } from "./gemini.provider";
 import { trackAiUsage } from "./usage-tracker";
+import { writeInstantDraft } from "@/lib/reviews/instant-draft";
 
 export class AIRouter {
   private providers: Map<AIProviderId, AIProvider> = new Map();
@@ -20,32 +21,12 @@ export class AIRouter {
     }
   }
 
-  /** Plain template used when AI is unavailable. It only restates the rating and selected chips. */
+  /** Local draft used for instant reviews and whenever AI is unavailable. */
   public generateSafeFallbackDraft(input: GenerateReviewDraftInput): GenerateReviewDraftOutput {
     const { shopName, rating, chips, language, style } = input;
-    const topics = chips.join(", ");
-    const tone = rating <= 2 ? "low" : rating === 3 ? "mixed" : "good";
-
-    const templates: Record<GenerateReviewDraftInput["language"], Record<typeof tone, string>> = {
-      en: {
-        good: `I visited ${shopName} and would rate my experience ${rating} out of 5. What stood out for me: ${topics}.`,
-        mixed: `I visited ${shopName} and would rate my experience ${rating} out of 5. It was okay overall. The main things I noticed: ${topics}.`,
-        low: `I visited ${shopName} and would rate my experience ${rating} out of 5. These areas need improvement: ${topics}.`,
-      },
-      hi: {
-        good: `मैं ${shopName} गया/गई और अपने अनुभव को 5 में से ${rating} रेटिंग देता/देती हूँ। मुझे ये बातें अच्छी लगीं: ${topics}।`,
-        mixed: `मैं ${shopName} गया/गई और अपने अनुभव को 5 में से ${rating} रेटिंग देता/देती हूँ। अनुभव ठीक-ठाक रहा। मैंने इन बातों पर ध्यान दिया: ${topics}।`,
-        low: `मैं ${shopName} गया/गई और अपने अनुभव को 5 में से ${rating} रेटिंग देता/देती हूँ। इन बातों में सुधार की ज़रूरत है: ${topics}।`,
-      },
-      hinglish: {
-        good: `${shopName} visit kiya aur experience ko 5 me se ${rating} rating dunga/dungi. Mujhe ye cheezein achhi lagi: ${topics}.`,
-        mixed: `${shopName} visit kiya aur experience ko 5 me se ${rating} rating dunga/dungi. Overall theek tha. Maine ye cheezein notice ki: ${topics}.`,
-        low: `${shopName} visit kiya aur experience ko 5 me se ${rating} rating dunga/dungi. In cheezon me improvement chahiye: ${topics}.`,
-      },
-    };
 
     return {
-      draftText: templates[language][tone],
+      draftText: writeInstantDraft({ shopName, rating, chips, language }),
       headline: `Review for ${shopName}`,
       provider: "fallback",
       model: "safe-template-fallback",

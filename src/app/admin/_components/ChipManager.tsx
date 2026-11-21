@@ -2,9 +2,10 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, Check, Pencil, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { chipsForShopType } from "@/lib/reviews/catalog";
 import { MAX_ACTIVE_CHIPS, MIN_CHIPS } from "@/lib/reviews/rules";
 import { cn } from "@/lib/utils";
 import { ConfirmButton } from "./ConfirmButton";
@@ -18,7 +19,7 @@ interface Chip {
 
 const iconButton = "flex size-11 items-center justify-center rounded-full text-moss hover:bg-ink/5 hover:text-ink disabled:opacity-30";
 
-export function ChipManager({ shopId, chips }: { shopId: string; chips: Chip[] }) {
+export function ChipManager({ shopId, shopType, chips }: { shopId: string; shopType: string; chips: Chip[] }) {
   const router = useRouter();
   const [newLabel, setNewLabel] = useState("");
   const [editing, setEditing] = useState<{ id: string; label: string } | null>(null);
@@ -26,6 +27,8 @@ export function ChipManager({ shopId, chips }: { shopId: string; chips: Chip[] }
   const [error, setError] = useState<string | null>(null);
   const base = `/api/admin/shops/${shopId}/chips`;
   const activeCount = chips.filter((chip) => chip.isActive).length;
+  const existing = new Set(chips.map((chip) => chip.label.toLowerCase()));
+  const suggestions = chips.length < MAX_ACTIVE_CHIPS ? chipsForShopType(shopType).filter((label) => !existing.has(label.toLowerCase())) : [];
 
   const run = async (url: string, method: string, body?: unknown) => {
     setIsBusy(true);
@@ -136,6 +139,26 @@ export function ChipManager({ shopId, chips }: { shopId: string; chips: Chip[] }
         <p role="alert" className="mt-3 text-sm font-medium text-danger">
           {error}
         </p>
+      )}
+
+      {suggestions.length > 0 && (
+        <div className="mt-4">
+          <h3 className="text-sm font-semibold text-moss">Suggested for {shopType}</h3>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {suggestions.map((label) => (
+              <button
+                key={label}
+                type="button"
+                disabled={isBusy}
+                onClick={() => run(base, "POST", { label })}
+                className="inline-flex min-h-11 items-center gap-1 rounded-full border border-dashed border-moss/50 bg-paper px-3.5 text-sm font-medium hover:border-pine disabled:opacity-50"
+              >
+                <Plus aria-hidden className="size-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       <form onSubmit={add} className="mt-3 flex gap-2">

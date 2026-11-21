@@ -28,9 +28,6 @@ export function assertProductionEnv(env: NodeJS.ProcessEnv = process.env): void 
   if (env.NODE_ENV !== "production") return;
 
   const missing: string[] = REQUIRED.filter((name) => !env[name]?.trim());
-  if (!env.GEMINI_API_KEY?.trim() && !env.OPENAI_API_KEY?.trim()) {
-    missing.push("GEMINI_API_KEY or OPENAI_API_KEY");
-  }
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
   }

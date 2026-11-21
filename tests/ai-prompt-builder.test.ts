@@ -51,6 +51,29 @@ describe("buildReviewPrompts", () => {
     expect(userPrompt).toContain("opposite");
   });
 
+  it("keeps low-rating topics from becoming compliments", () => {
+    const { userPrompt } = buildReviewPrompts(input({ rating: 2, chips: ["Friendly staff"] }));
+    expect(userPrompt).toContain("Do not describe any topic as good");
+    expect(userPrompt).toContain("could be better");
+  });
+
+  it("labels low-rating chips as improvement topics", () => {
+    expect(buildReviewPrompts(input({ rating: 2 })).userPrompt).toContain("Topics the customer wants improved:");
+    expect(buildReviewPrompts(input({ rating: 4 })).userPrompt).toContain("Topics selected by the customer:");
+  });
+
+  it("does not add claims beyond the selected topics", () => {
+    expect(buildReviewPrompts(input()).systemPrompt).toContain("outside the selected topics");
+  });
+
+  it("does not explain topics with invented detail", () => {
+    expect(buildReviewPrompts(input()).systemPrompt).toContain("Do not explain how or why");
+  });
+
+  it("does not invent whether the customer will return", () => {
+    expect(buildReviewPrompts(input()).systemPrompt).toContain("whether the customer will return");
+  });
+
   it.each([
     ["hi", "Devanagari"],
     ["hinglish", "Roman"],
@@ -68,14 +91,13 @@ describe("safe fallback draft", () => {
   const router = new AIRouter([]);
 
   it("does not praise a low rating", () => {
-    const { draftText } = router.generateSafeFallbackDraft(input({ rating: 2, chips: ["Friendly staff"] }));
-    expect(draftText).toContain("Friendly staff");
-    expect(draftText).toContain("2 out of 5");
-    expect(draftText.toLowerCase()).not.toMatch(/great|excellent|loved/);
+    const { draftText } = router.generateSafeFallbackDraft(input({ rating: 2, chips: ["Staff behaviour", "Service"] }));
+    expect(draftText).toContain("staff behaviour");
+    expect(draftText.toLowerCase()).not.toMatch(/great|excellent|loved|liked/);
   });
 
   it.each(["en", "hi", "hinglish"] as const)("uses every chip in %s", (language) => {
     const { draftText } = router.generateSafeFallbackDraft(input({ language, chips: ["Taste", "Service", "Price"] }));
-    for (const chip of ["Taste", "Service", "Price"]) expect(draftText).toContain(chip);
+    for (const chip of ["taste", "service", "price"]) expect(draftText.toLowerCase()).toContain(chip);
   });
 });

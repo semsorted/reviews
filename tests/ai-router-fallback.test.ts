@@ -147,7 +147,8 @@ describe("AIRouter & Fallback Engine", () => {
     expect(result.isFallback).toBe(true);
     expect(result.model).toBe("safe-template-fallback");
     // Verifies customer feedback is preserved in safe fallback
-    expect(result.draftText).toContain("Cold brew, Patio");
+    expect(result.draftText.toLowerCase()).toContain("cold brew");
+    expect(result.draftText.toLowerCase()).toContain("patio");
   });
 
   it("handles unconfigured providers gracefully with safe fallback", async () => {

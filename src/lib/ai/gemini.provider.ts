@@ -13,7 +13,7 @@ export class GeminiProvider implements AIProvider {
   private defaultModel: string;
 
   constructor() {
-    this.defaultModel = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+    this.defaultModel = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
     const apiKey = process.env.GEMINI_API_KEY;
     if (apiKey && apiKey.trim() !== "" && !apiKey.includes("placeholder")) {
       this.client = new GoogleGenAI({ apiKey });

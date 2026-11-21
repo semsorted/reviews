@@ -72,6 +72,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
           />
           <ChipManager
             shopId={shop.id}
+            shopType={shop.businessCategory}
             chips={shop.chips.map((chip) => ({ id: chip.id, label: chip.label, isActive: chip.isActive }))}
           />
         </div>

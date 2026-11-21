@@ -19,7 +19,7 @@ const LANGUAGE_GUIDELINES: Record<ReviewLanguage, string> = {
 
 function toneFor(rating: number): string {
   if (rating <= 2) {
-    return "Do not praise the business. Treat the selected topics as areas the customer wants improved. Do not claim a specific failure or state the opposite of a topic, such as calling friendly staff rude.";
+    return "Do not praise the business. Do not describe any topic as good. Read each label as a neutral topic, so 'Friendly staff' means staff friendliness, and say these topics could be better. Never call a topic fast, friendly, fresh, fine, or okay. Do not claim a specific failure or state the opposite of a topic, such as calling friendly staff rude.";
   }
   if (rating === 3) {
     return "Keep a balanced, mixed tone. Do not exaggerate in either direction.";
@@ -33,18 +33,19 @@ export function buildReviewPrompts(input: GenerateReviewDraftInput): PromptPaylo
   const systemPrompt = `You help a real customer turn their own rating and selected topics into a Google review draft.
 
 Rules:
-1. Use only the business name, category, rating, and selected topics provided.
+1. Use only the business name, category, rating, and selected topics provided. Do not add claims about anything outside the selected topics. Do not explain how or why a topic was good or bad.
 2. Never invent staff names, purchases, products, prices, dates, wait times, visit frequency, or personal stories.
 3. The tone must match the customer's rating. Never turn a low rating into praise.
 4. Avoid marketing language, superlatives, hashtags, and emojis.
 5. Do not mention AI, a QR code, or being asked to leave a review.
+6. Do not mention future plans, recommendations, or whether the customer will return.
 
 Return only a JSON object: {"draftText":"the review","headline":"a 3-6 word summary"}`;
 
   const userPrompt = `Business: ${shopName}
 Category: ${businessCategory}
 Rating: ${rating} out of 5
-Topics selected by the customer:
+${rating <= 2 ? "Topics the customer wants improved:" : "Topics selected by the customer:"}
 ${chips.map((chip) => `- ${chip}`).join("\n")}
 
 Tone: ${toneFor(rating)}
