@@ -4,6 +4,16 @@ export const SITE_TITLE = "Semsorted: Get More Honest Google Reviews with a QR C
 export const SITE_DESCRIPTION =
   "Semsorted helps local shops in India collect honest Google reviews. Customers scan a QR code, choose a rating, edit a ready draft, and post it on Google.";
 
+const WHATSAPP_MESSAGE = "Hi Semsorted, mujhe apni shop ke liye review QR chahiye.";
+
+export const CONTACT = {
+  email: "semsorted1@gmail.com",
+  phone: "+91 90018 92417",
+  phoneHref: "tel:+919001892417",
+  emailHref: "mailto:semsorted1@gmail.com?subject=Review%20QR%20for%20my%20shop",
+  whatsappHref: `https://wa.me/919001892417?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`,
+};
+
 const RETIRED_PATH = /^\/(why-semsorted|universities|request|prices|how-it-works|faq)(\/.*)?$/;
 
 /** Pages from the previous website. They return 410 so search engines drop them. */

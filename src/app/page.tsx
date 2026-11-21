@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Check, MessageCircleQuestion, QrCode, SearchX, Send, Star, Store, UserRoundCheck, MousePointerClick } from "lucide-react";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import { Check, Mail, MessageCircle, MessageCircleQuestion, MousePointerClick, Phone, QrCode, SearchX, Send, Star, Store, UserRoundCheck } from "lucide-react";
+import { CONTACT, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import { SHOP_TYPES } from "@/lib/reviews/catalog";
 import { PHOTOS } from "./_landing/content";
 import { StoryTabs } from "./_landing/StoryTabs";
@@ -52,7 +52,7 @@ const FAQS = [
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
-    { "@type": "Organization", "@id": `${SITE_URL}/#organization`, name: SITE_NAME, url: SITE_URL, logo: `${SITE_URL}/icon.svg` },
+    { "@type": "Organization", "@id": `${SITE_URL}/#organization`, name: SITE_NAME, url: SITE_URL, logo: `${SITE_URL}/icon.svg`, email: CONTACT.email, telephone: "+919001892417", contactPoint: { "@type": "ContactPoint", contactType: "sales", telephone: "+919001892417", email: CONTACT.email, areaServed: "IN", availableLanguage: ["English", "Hindi"] } },
     { "@type": "WebSite", "@id": `${SITE_URL}/#website`, name: SITE_NAME, url: SITE_URL, description: SITE_DESCRIPTION, inLanguage: ["en-IN", "hi-IN"], publisher: { "@id": `${SITE_URL}/#organization` } },
   ],
 };
@@ -74,6 +74,9 @@ export default function LandingPage() {
           <a href="#kaise" className="hover:text-g-blue">How it works</a>
           <a href="#sawaal" className="hover:text-g-blue">FAQ</a>
         </nav>
+        <a href="#contact" className="inline-flex min-h-11 items-center rounded-full bg-g-blue px-4 text-sm font-semibold text-white hover:bg-pine-deep">
+          Contact us
+        </a>
       </header>
 
       <main>
@@ -87,11 +90,11 @@ export default function LandingPage() {
               Customer khush hai, par review likhna bhool jata hai. Semsorted use ek QR scan aur do-teen taps ka kaam bana deta hai.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <a href="#kaise" className="inline-flex min-h-12 items-center rounded-full bg-g-blue px-6 font-semibold text-white hover:bg-pine-deep">
-                See how it works
+              <a href="#contact" className="inline-flex min-h-12 items-center rounded-full bg-g-blue px-6 font-semibold text-white hover:bg-pine-deep">
+                Apni shop ke liye baat karein
               </a>
-              <a href="#kahani" className="inline-flex min-h-12 items-center rounded-full border border-line px-6 font-semibold text-g-blue hover:border-g-blue">
-                Kahani padho
+              <a href="#kaise" className="inline-flex min-h-12 items-center rounded-full border border-line px-6 font-semibold text-g-blue hover:border-g-blue">
+                See how it works
               </a>
             </div>
           </div>
@@ -234,6 +237,29 @@ export default function LandingPage() {
                   <p className="mt-2 leading-relaxed text-moss">{faq.a}</p>
                 </details>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="contact" aria-labelledby="contact-title" className="scroll-mt-4 bg-white">
+          <div className="mx-auto max-w-6xl px-5 py-16 lg:py-20">
+            <h2 id="contact-title" className="max-w-[20ch] text-3xl font-bold sm:text-4xl">Apni shop ke liye review QR chahiye?</h2>
+            <p className="mt-3 max-w-[52ch] text-lg leading-relaxed text-moss">
+              Humein WhatsApp, call ya email karo. Hum aapki shop ke hisaab se chips aur QR ready kar denge.
+            </p>
+            <div className="mt-7 grid gap-3 sm:grid-cols-3">
+              <a href={CONTACT.whatsappHref} target="_blank" rel="noopener noreferrer" className="flex min-h-16 items-center gap-3 rounded-xl bg-g-green px-5 py-3 font-semibold text-white hover:opacity-90">
+                <MessageCircle aria-hidden className="size-6 shrink-0" />
+                <span>WhatsApp<span className="block text-sm font-normal">{CONTACT.phone}</span></span>
+              </a>
+              <a href={CONTACT.phoneHref} className="flex min-h-16 items-center gap-3 rounded-xl bg-g-blue px-5 py-3 font-semibold text-white hover:bg-pine-deep">
+                <Phone aria-hidden className="size-6 shrink-0" />
+                <span>Call us<span className="block text-sm font-normal">{CONTACT.phone}</span></span>
+              </a>
+              <a href={CONTACT.emailHref} className="flex min-h-16 min-w-0 items-center gap-3 rounded-xl border border-line px-5 py-3 font-semibold text-ink hover:border-g-blue">
+                <Mail aria-hidden className="size-6 shrink-0 text-g-red" />
+                <span className="min-w-0">Email<span className="block truncate text-sm font-normal text-moss">{CONTACT.email}</span></span>
+              </a>
             </div>
           </div>
         </section>
