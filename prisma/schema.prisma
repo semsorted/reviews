@@ -1,0 +1,296 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  SHOP_OWNER
+  SHOP_STAFF
+  CUSTOMER
+
+  @@map("user_role")
+}
+
+enum ShopMemberRole {
+  OWNER
+  STAFF
+
+  @@map("shop_member_role")
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+
+  @@map("subscription_status")
+}
+
+model Profile {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  fullName  String?  @map("full_name")
+  role      Role     @default(SHOP_OWNER)
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  ownedShops  Shop[]       @relation("ShopOwner")
+  memberships ShopMember[]
+  auditLogs   AuditLog[]
+
+  @@map("profiles")
+}
+
+model Shop {
+  id                    String   @id @default(uuid()) @db.Uuid
+  ownerId               String   @map("owner_id") @db.Uuid
+  name                  String
+  slug                  String   @unique
+  description           String?
+  businessCategory      String   @map("business_category")
+  address               String?
+  phone                 String?
+  logoUrl               String?  @map("logo_url")
+  primaryColor          String   @default("#4F46E5") @map("primary_color")
+  googleReviewUrl       String   @map("google_review_url")
+  verifiedBusinessFacts Json     @default("[]") @map("verified_business_facts")
+  defaultLanguage       String   @default("en") @map("default_language")
+  defaultAiProvider     String   @default("gemini") @map("default_ai_provider")
+  isActive              Boolean  @default(true) @map("is_active")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  owner           Profile          @relation("ShopOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  members         ShopMember[]
+  qrCodes         QrCode[]
+  chips           ReviewChip[]
+  reviewSessions  ReviewSession[]
+  reviewDrafts    ReviewDraft[]
+  analyticsEvents AnalyticsEvent[]
+  aiUsageLogs     AiUsageLog[]
+  subscription    Subscription?
+  auditLogs       AuditLog[]
+
+  @@index([ownerId])
+  @@index([slug])
+  @@map("shops")
+}
+
+model ShopMember {
+  id        String         @id @default(uuid()) @db.Uuid
+  shopId    String         @map("shop_id") @db.Uuid
+  userId    String         @map("user_id") @db.Uuid
+  role      ShopMemberRole @default(STAFF)
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  shop Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  user Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, userId])
+  @@index([userId])
+  @@index([shopId])
+  @@map("shop_members")
+}
+
+model QrCode {
+  id             String   @id @default(uuid()) @db.Uuid
+  shopId         String   @map("shop_id") @db.Uuid
+  name           String
+  publicToken    String   @unique @map("public_token")
+  destinationUrl String   @map("destination_url")
+  qrImagePath    String?  @map("qr_image_path")
+  scanCount      Int      @default(0) @map("scan_count")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  shop            Shop             @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  reviewSessions  ReviewSession[]
+  analyticsEvents AnalyticsEvent[]
+
+  @@index([publicToken])
+  @@index([shopId])
+  @@map("qr_codes")
+}
+
+model ReviewChip {
+  id        String   @id @default(uuid()) @db.Uuid
+  shopId    String   @map("shop_id") @db.Uuid
+  label     String
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, label])
+  @@index([shopId, isActive, sortOrder])
+  @@map("review_chips")
+}
+
+model ReviewSession {
+  id                 String   @id @default(uuid()) @db.Uuid
+  shopId             String   @map("shop_id") @db.Uuid
+  qrCodeId           String?  @map("qr_code_id") @db.Uuid
+  anonymousSessionId String   @map("anonymous_session_id")
+  language           String   @default("en")
+  status             String   @default("ACTIVE")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  shop            Shop             @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  qrCode          QrCode?          @relation(fields: [qrCodeId], references: [id], onDelete: SetNull)
+  drafts          ReviewDraft[]
+  analyticsEvents AnalyticsEvent[]
+  aiUsageLogs     AiUsageLog[]
+
+  @@index([shopId])
+  @@index([qrCodeId])
+  @@index([anonymousSessionId])
+  @@map("review_sessions")
+}
+
+model ReviewDraft {
+  id            String   @id @default(uuid()) @db.Uuid
+  sessionId     String   @map("session_id") @db.Uuid
+  shopId        String   @map("shop_id") @db.Uuid
+  customerNotes String?  @map("customer_notes")
+  generatedText String   @map("generated_text")
+  editedText    String?  @map("edited_text")
+  provider      String
+  model         String?
+  language      String   @default("en")
+  style         String   @default("natural")
+  isCopied      Boolean  @default(false) @map("is_copied")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  session ReviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  shop    Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([shopId])
+  @@map("review_drafts")
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  shopId    String   @map("shop_id") @db.Uuid
+  qrCodeId  String?  @map("qr_code_id") @db.Uuid
+  sessionId String?  @map("session_id") @db.Uuid
+  eventType String   @map("event_type")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  shop    Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  qrCode  QrCode?        @relation(fields: [qrCodeId], references: [id], onDelete: SetNull)
+  session ReviewSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([shopId, eventType])
+  @@index([createdAt])
+  @@index([qrCodeId])
+  @@map("analytics_events")
+}
+
+model AiUsageLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  shopId        String   @map("shop_id") @db.Uuid
+  sessionId     String?  @map("session_id") @db.Uuid
+  provider      String
+  model         String
+  inputTokens   Int      @default(0) @map("input_tokens")
+  outputTokens  Int      @default(0) @map("output_tokens")
+  estimatedCost Decimal  @default(0.0) @map("estimated_cost") @db.Decimal(10, 6)
+  status        String   @default("SUCCESS")
+  errorMessage  String?  @map("error_message")
+  latencyMs     Int      @default(0) @map("latency_ms")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  shop    Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  session ReviewSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([shopId])
+  @@index([createdAt])
+  @@map("ai_usage_logs")
+}
+
+model Plan {
+  id                      String   @id @default(uuid()) @db.Uuid
+  name                    String
+  code                    String   @unique
+  description             String?
+  priceMonthly            Decimal  @default(0.0) @map("price_monthly") @db.Decimal(10, 2)
+  maxQrCodes              Int      @default(1) @map("max_qr_codes")
+  maxMonthlyAiGenerations Int      @default(100) @map("max_monthly_ai_generations")
+  allowedAiProviders      String[] @default(["gemini", "openai"]) @map("allowed_ai_providers")
+  customBranding          Boolean  @default(false) @map("custom_branding")
+  isActive                Boolean  @default(true) @map("is_active")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id        String             @id @default(uuid()) @db.Uuid
+  shopId    String             @unique @map("shop_id") @db.Uuid
+  planId    String             @map("plan_id") @db.Uuid
+  status    SubscriptionStatus @default(ACTIVE)
+  startDate DateTime           @default(now()) @map("start_date")
+  endDate   DateTime?          @map("end_date")
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([shopId])
+  @@index([planId])
+  @@map("subscriptions")
+}
+
+model AiProviderSetting {
+  id                String    @id @default(uuid()) @db.Uuid
+  provider          String    @unique
+  isEnabled         Boolean   @default(true) @map("is_enabled")
+  defaultModel      String    @map("default_model")
+  availableModels   String[]  @default([]) @map("available_models")
+  rpmLimit          Int       @default(60) @map("rpm_limit")
+  tpmLimit          Int       @default(100000) @map("tpm_limit")
+  isFallbackEnabled Boolean   @default(true) @map("is_fallback_enabled")
+  fallbackPriority  Int       @default(1) @map("fallback_priority")
+  isHealthy         Boolean   @default(true) @map("is_healthy")
+  lastCheckedAt     DateTime? @map("last_checked_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@map("ai_provider_settings")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  shopId     String?  @map("shop_id") @db.Uuid
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  details    Json?
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user Profile? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  shop Shop?    @relation(fields: [shopId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([shopId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
