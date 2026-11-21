@@ -2,22 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { CONTACT } from "@/lib/site";
+import { CONTACT, NAV_LINKS } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import { WhatsAppIcon } from "./WhatsAppIcon";
 
-const LINKS = [
-  { href: "#kaise", label: "How it works" },
-  { href: "#kyun", label: "Why reviews" },
-  { href: "#kahani", label: "Story" },
-  { href: "#sawaal", label: "FAQ" },
-];
-
 export function SiteNav() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const isCurrent = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -38,18 +34,23 @@ export function SiteNav() {
           <Logo />
         </Link>
 
-        <nav aria-label="Page sections" className="hidden items-center gap-1 lg:flex">
-          {LINKS.map((link) => (
-            <a key={link.href} href={link.href} className="rounded-full px-4 py-2 text-[0.975rem] font-medium text-moss transition-colors hover:bg-mist hover:text-ink">
+        <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              aria-current={isCurrent(link.href) ? "page" : undefined}
+              className={cn("rounded-full px-4 py-2 text-[0.975rem] font-medium transition-colors hover:bg-mist hover:text-ink", isCurrent(link.href) ? "bg-g-blue-tint text-g-blue" : "text-moss")}
+            >
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
         <div className="flex items-center gap-1.5">
-          <a href={CONTACT.whatsappHref} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-whatsapp px-4 font-semibold text-white transition-colors hover:bg-whatsapp-deep sm:px-5">
+          <a href={CONTACT.whatsappHref} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-whatsapp px-3.5 font-semibold text-white transition-colors hover:bg-whatsapp-deep sm:px-5">
             <WhatsAppIcon className="size-[1.15rem]" />
-            WhatsApp
+            <span className="max-[400px]:sr-only">WhatsApp</span>
           </a>
           <button
             type="button"
@@ -65,11 +66,17 @@ export function SiteNav() {
       </div>
 
       {open && (
-        <nav id="mobile-menu" aria-label="Page sections" className="border-t border-line bg-white px-4 py-3 lg:hidden">
-          {LINKS.map((link) => (
-            <a key={link.href} href={link.href} onClick={() => setOpen(false)} className="flex min-h-12 items-center rounded-xl px-3 text-lg font-medium hover:bg-mist">
+        <nav id="mobile-menu" aria-label="Main" className="border-t border-line bg-white px-4 py-3 lg:hidden">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              aria-current={isCurrent(link.href) ? "page" : undefined}
+              onClick={() => setOpen(false)}
+              className={cn("flex min-h-12 items-center rounded-xl px-3 text-lg font-medium hover:bg-mist", isCurrent(link.href) && "bg-g-blue-tint text-g-blue")}
+            >
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
       )}

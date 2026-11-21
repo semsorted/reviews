@@ -65,6 +65,188 @@ h3 {
   }
 }
 
+.book-scroll {
+  height: calc(100dvh + (var(--count) - 1) * 110dvh);
+}
+
+.book-stage {
+  position: sticky;
+  top: 4.5rem;
+  display: flex;
+  height: calc(100dvh - 4.5rem);
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow: clip;
+  padding-block: 0.875rem;
+}
+
+.book {
+  position: relative;
+  min-height: 0;
+  flex: 1;
+  overflow: clip;
+  border-radius: 1.25rem;
+  perspective: 4200px;
+}
+
+.book-left,
+.book-back {
+  display: none;
+}
+
+.book-leaf {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(calc(var(--turn, 0) * -180deg));
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.book-face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+}
+
+.book-back {
+  transform: rotateY(180deg);
+}
+
+.book-shade {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: calc(var(--shade, 0) * 0.22);
+  pointer-events: none;
+}
+
+.book-teaser {
+  font-size: 1.3rem;
+}
+
+.book-full {
+  display: none;
+  font-size: 1.03rem;
+}
+
+@media (min-width: 64rem) {
+  .book {
+    overflow: visible;
+  }
+
+  .book-left {
+    position: absolute;
+    inset: 0 50% 0 0;
+    display: block;
+    overflow: hidden;
+    border-radius: 1.25rem 0 0 1.25rem;
+  }
+
+  .book-leaf {
+    inset: 0 0 0 50%;
+  }
+
+  .book-face {
+    border-radius: 0 1.25rem 1.25rem 0;
+    box-shadow: inset 18px 0 24px -20px rgb(0 0 0 / 0.35);
+  }
+
+  .book-back {
+    display: block;
+    border-radius: 1.25rem 0 0 1.25rem;
+    box-shadow: none;
+  }
+
+  .book-band {
+    display: none;
+  }
+}
+
+@media (min-width: 64rem) and (min-height: 46rem) {
+  .book-teaser {
+    display: none;
+  }
+
+  .book-full {
+    display: block;
+  }
+}
+
+@media (min-height: 50rem) {
+  .book-teaser {
+    font-size: 1.5rem;
+  }
+
+  .book-full {
+    font-size: 1.16rem;
+  }
+}
+
+@media (max-height: 44rem) {
+  .book-teaser {
+    font-size: 1.05rem;
+    line-height: 1.45;
+  }
+
+  .book-band {
+    padding-block: 0.75rem;
+  }
+
+  .book-band h3 {
+    font-size: 1.6rem;
+  }
+}
+
+/* Motion-sensitive visitors get a plain list unless they turn the page flip on. */
+@media (prefers-reduced-motion: reduce) {
+  .book-scroll:not([data-flip="on"]) {
+    height: auto;
+  }
+
+  .book-scroll:not([data-flip="on"]) .book-stage {
+    position: static;
+    height: auto;
+    padding-block: 3rem;
+  }
+
+  .book-scroll:not([data-flip="on"]) .book {
+    display: grid;
+    gap: 1rem;
+    overflow: visible;
+    perspective: none;
+  }
+
+  .book-scroll:not([data-flip="on"]) :is(.book-left, .book-back, .book-shade, .book-controls) {
+    display: none;
+  }
+
+  .book-scroll:not([data-flip="on"]) .book-leaf {
+    position: relative;
+    inset: auto;
+    z-index: auto !important;
+    transform: none;
+  }
+
+  .book-scroll:not([data-flip="on"]) .book-face {
+    position: relative;
+    border-radius: 1.25rem;
+  }
+
+  .book-scroll:not([data-flip="on"]) .book-band {
+    display: block;
+  }
+
+  .book-scroll:not([data-flip="on"]) .book-teaser {
+    display: none;
+  }
+
+  .book-scroll:not([data-flip="on"]) .book-full {
+    display: block;
+  }
+}
+
 .review-surface {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Devanagari", sans-serif;
 }

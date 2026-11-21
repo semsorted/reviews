@@ -1,5 +1,22 @@
 import { cn } from "@/lib/utils";
 
+const BLUE = "#1a73e8";
+const RED = "#ea4335";
+const YELLOW = "#f9ab00";
+const GREEN = "#34a853";
+
+export const WORDMARK = [
+  ["S", BLUE],
+  ["e", RED],
+  ["m", YELLOW],
+  ["s", BLUE],
+  ["o", GREEN],
+  ["r", RED],
+  ["t", YELLOW],
+  ["e", BLUE],
+  ["d", GREEN],
+] as const;
+
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg aria-hidden viewBox="-2 -2 52 52" className={className}>
@@ -15,9 +32,13 @@ export function LogoMark({ className }: { className?: string }) {
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-1.5 font-display text-[1.45rem] font-semibold leading-none tracking-[-0.025em]", className)}>
+    <span className={cn("inline-flex items-center gap-1.5 font-display text-[1.5rem] font-semibold leading-none tracking-[-0.02em]", className)}>
       <LogoMark className="size-8 shrink-0" />
-      <span className="translate-y-[0.14em]">Semsorted</span>
+      <span className="translate-y-[0.14em]">
+        {WORDMARK.map(([letter, color], index) => (
+          <span key={index} style={{ color }}>{letter}</span>
+        ))}
+      </span>
     </span>
   );
 }

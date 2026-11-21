@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { WORDMARK } from "@/components/Logo";
 
 export const alt = "Semsorted helps local shops get more honest Google reviews";
 export const size = { width: 1200, height: 630 };
@@ -15,7 +16,9 @@ export default function OpenGraphImage() {
             <circle cx="34" cy="14" r="4.25" fill="#ea4335" />
             <polygon fill="#fbbc04" points="14,27.4 15.78,31.54 20.28,31.96 16.89,34.94 17.88,39.34 14,37.04 10.12,39.34 11.11,34.94 7.72,31.96 12.22,31.54" />
           </svg>
-          Semsorted
+          {WORDMARK.map(([letter, color], index) => (
+            <span key={index} style={{ color }}>{letter}</span>
+          ))}
         </div>
         <div style={{ display: "flex", fontSize: 84, fontWeight: 700, lineHeight: 1.04, letterSpacing: -2, maxWidth: 1000 }}>
           Honest Google reviews for your local shop

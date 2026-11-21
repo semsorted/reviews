@@ -11,9 +11,11 @@ function sourceFiles(dir: string): string[] {
 
 describe("public surface", () => {
   it.each(["/onboarding", "/signup", "/dashboard", "/admin/shops/new", "demo-token"])(
-    "landing page has no %s path",
+    "public pages have no %s path",
     (path) => {
-      expect(readFileSync("src/app/page.tsx", "utf8")).not.toContain(path);
+      for (const file of [...sourceFiles("src/app/(site)"), ...sourceFiles("src/app/_landing")]) {
+        expect(readFileSync(file, "utf8")).not.toContain(path);
+      }
     }
   );
 
