@@ -2,6 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Logo } from "@/components/Logo";
 import { AuthError, getCurrentUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = {
@@ -40,8 +41,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="min-h-dvh">
       <header className="border-b border-line bg-paper">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-          <Link href="/admin" className="font-display text-xl font-bold tracking-tight">
-            Semsorted
+          <Link href="/admin" aria-label="Semsorted admin">
+            <Logo />
           </Link>
           <SignOut />
         </div>

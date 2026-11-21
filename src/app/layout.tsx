@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Mukta } from "next/font/google";
+import { Anek_Devanagari, Mukta } from "next/font/google";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
-const bricolage = Bricolage_Grotesque({
-  subsets: ["latin"],
-  variable: "--font-bricolage",
+const anek = Anek_Devanagari({
+  subsets: ["latin", "devanagari"],
+  variable: "--font-anek",
   display: "swap",
   preload: false,
 });
@@ -27,6 +27,7 @@ export const metadata: Metadata = {
   openGraph: { type: "website", url: "/", siteName: SITE_NAME, title: SITE_TITLE, description: SITE_DESCRIPTION, locale: "en_IN" },
   twitter: { card: "summary_large_image", title: SITE_TITLE, description: SITE_DESCRIPTION },
   robots: { index: true, follow: true },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
@@ -35,7 +36,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${bricolage.variable} ${mukta.variable} antialiased`}>
+    <html lang="en" className={`${anek.variable} ${mukta.variable} antialiased`}>
       <body>{children}</body>
     </html>
   );

@@ -1,23 +1,14 @@
 const COMMONS = "https://thumb.wikimedia.org/wikipedia/commons/thumb";
 
 export const PHOTOS = {
-  shop: {
-    src: `${COMMONS}/4/49/Grocery_with_Tea_Stall_-_Godkhali_-_South_24_Parganas_2016-07-10_4760.JPG/1280px-Grocery_with_Tea_Stall_-_Godkhali_-_South_24_Parganas_2016-07-10_4760.JPG`,
-    alt: "A small thatched grocery and tea stall in a village in West Bengal",
-    title: "Grocery with Tea Stall, Godkhali",
-    author: "Biswarup Ganguly",
-    license: "CC BY 3.0",
-    licenseUrl: "https://creativecommons.org/licenses/by/3.0/",
-    source: "https://commons.wikimedia.org/wiki/File:Grocery_with_Tea_Stall_-_Godkhali_-_South_24_Parganas_2016-07-10_4760.JPG",
-  },
-  stall: {
-    src: `${COMMONS}/4/4d/Night_Street_Food_Stall_Hyderabad.jpg/1280px-Night_Street_Food_Stall_Hyderabad.jpg`,
-    alt: "A warmly lit street food stall at night in Hyderabad",
-    title: "Night Street Food Stall, Hyderabad",
-    author: "STLLR Photo",
-    license: "CC BY 2.0",
-    licenseUrl: "https://creativecommons.org/licenses/by/2.0/",
-    source: "https://commons.wikimedia.org/wiki/File:Night_Street_Food_Stall_Hyderabad.jpg",
+  chai: {
+    src: `${COMMONS}/6/6b/Kerala-style_Glass_of_Chai_%28Tea%29.jpg/1280px-Kerala-style_Glass_of_Chai_%28Tea%29.jpg`,
+    alt: "A frothy glass of hot chai on a wooden table",
+    title: "Kerala-style Glass of Chai",
+    author: "Navaneethpp",
+    license: "CC BY 4.0",
+    licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+    source: "https://commons.wikimedia.org/wiki/File:Kerala-style_Glass_of_Chai_(Tea).jpg",
   },
   sweets: {
     src: `${COMMONS}/0/04/Burfi_and_Peda%2C_Indian_Sweets_Mithai_Chennai_India.jpg/1280px-Burfi_and_Peda%2C_Indian_Sweets_Mithai_Chennai_India.jpg`,
@@ -27,15 +18,6 @@ export const PHOTOS = {
     license: "CC BY 2.0",
     licenseUrl: "https://creativecommons.org/licenses/by/2.0/",
     source: "https://commons.wikimedia.org/wiki/File:Burfi_and_Peda,_Indian_Sweets_Mithai_Chennai_India.jpg",
-  },
-  spices: {
-    src: `${COMMONS}/e/e7/Foods_and_Flavors_of_India_%288342610160%29.jpg/1280px-Foods_and_Flavors_of_India_%288342610160%29.jpg`,
-    alt: "Shelves of spices, lentils, and packaged food in an Indian grocery",
-    title: "Foods and Flavors of India",
-    author: "U.S. Food and Drug Administration",
-    license: "Public domain",
-    licenseUrl: "https://creativecommons.org/publicdomain/mark/1.0/",
-    source: "https://commons.wikimedia.org/wiki/File:Foods_and_Flavors_of_India_(8342610160).jpg",
   },
 } as const;
 

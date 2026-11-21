@@ -24,7 +24,10 @@
   --color-review-blue: #1a73e8;
   --color-review-tint: #e8f0fe;
   --color-review-star: #fbbc04;
-  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --color-night: #0b2447;
+  --color-whatsapp: #0a7c66;
+  --color-whatsapp-deep: #075e4e;
+  --font-display: var(--font-anek), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-mukta), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -54,6 +57,12 @@ h3 {
 :focus-visible {
   outline: 2px solid var(--color-pine);
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 .review-surface {

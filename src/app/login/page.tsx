@@ -3,6 +3,7 @@
 import React, { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,8 +68,8 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 py-10">
-      <Link href="/" className="font-display text-xl font-bold tracking-tight">
-        Semsorted
+      <Link href="/" aria-label="Semsorted home">
+        <Logo />
       </Link>
       <h1 className="mt-10 text-[2.35rem] font-bold">Admin sign in</h1>
       <p className="mt-2 text-moss">Manage shops, chips, and QR codes.</p>

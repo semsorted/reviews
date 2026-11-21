@@ -7,10 +7,6 @@ export const SITE_DESCRIPTION =
 const WHATSAPP_MESSAGE = "Hi Semsorted, mujhe apni shop ke liye review QR chahiye.";
 
 export const CONTACT = {
-  email: "semsorted1@gmail.com",
-  phone: "+91 90018 92417",
-  phoneHref: "tel:+919001892417",
-  emailHref: "mailto:semsorted1@gmail.com?subject=Review%20QR%20for%20my%20shop",
   whatsappHref: `https://wa.me/919001892417?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`,
 };
 
