@@ -16,9 +16,13 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
     const { error } = await supabase.auth.signInWithPassword(parsed.data);
-    if (error) {
+    if (error?.status === 429) {
+      return NextResponse.json({ error: "Too many attempts. Wait a few minutes and try again." }, { status: 429 });
+    }
+    if (error?.code === "invalid_credentials" || (error?.status && error.status >= 400 && error.status < 500)) {
       return NextResponse.json({ error: "Incorrect email or password" }, { status: 401 });
     }
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (error) {

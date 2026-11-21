@@ -1,0 +1,12 @@
+export const SITE_URL = "https://semsorted.com";
+export const SITE_NAME = "Semsorted";
+export const SITE_TITLE = "Semsorted: Get More Honest Google Reviews with a QR Code";
+export const SITE_DESCRIPTION =
+  "Semsorted helps local shops in India collect honest Google reviews. Customers scan a QR code, choose a rating, edit a ready draft, and post it on Google.";
+
+const RETIRED_PATH = /^\/(why-semsorted|universities|request|prices|how-it-works|faq)(\/.*)?$/;
+
+/** Pages from the previous website. They return 410 so search engines drop them. */
+export function isRetiredPath(pathname: string): boolean {
+  return RETIRED_PATH.test(pathname);
+}

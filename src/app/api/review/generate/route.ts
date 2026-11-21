@@ -3,13 +3,14 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { toReviewLanguage, writeInstantDraft } from "@/lib/reviews/instant-draft";
 import { MAX_CHIPS, MAX_DRAFTS_PER_SESSION, MIN_CHIPS } from "@/lib/reviews/rules";
+import { uuidSchema } from "@/lib/reviews/schema";
 
 const RecordDraftSchema = z.object({
   token: z.string().min(8).max(64),
-  sessionId: z.uuid(),
+  sessionId: uuidSchema,
   rating: z.number().int().min(1).max(5),
   chipIds: z
-    .array(z.uuid())
+    .array(uuidSchema)
     .min(MIN_CHIPS)
     .max(MAX_CHIPS)
     .refine((ids) => new Set(ids).size === ids.length),

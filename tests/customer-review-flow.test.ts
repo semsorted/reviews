@@ -102,6 +102,15 @@ describe("POST /api/review/generate", () => {
     expect(mocks.draftCreate).not.toHaveBeenCalled();
   });
 
+  it("accepts uppercase IDs without a database error", async () => {
+    const response = await record(
+      post("/api/review/generate", { ...body, sessionId: sessionId.toUpperCase(), chipIds: [chipB.toUpperCase(), chipA.toUpperCase()] })
+    );
+    expect(response.status).toBe(200);
+    expect(mocks.sessionFind.mock.calls[0][0].where.id).toBe(sessionId);
+    expect(mocks.qrFind.mock.calls[0][0].select.shop.select.chips.where.id.in).toEqual([chipB, chipA]);
+  });
+
   it("rejects a session from another QR", async () => {
     mocks.sessionFind.mockResolvedValue({ qrCodeId: "66666666-6666-4666-8666-666666666666" });
     expect((await record(post("/api/review/generate", body))).status).toBe(403);
@@ -168,6 +177,15 @@ describe("POST /api/analytics/event", () => {
       where: { id: draftId, sessionId, shopId },
       data: { isCopied: true },
     });
+  });
+
+  it.each([
+    ["paused QR", { ...activeQr, isActive: false }],
+    ["paused shop", { ...activeQr, shop: { ...activeQr.shop, isActive: false } }],
+  ])("ignores events for a %s", async (_name, qr) => {
+    mocks.qrFind.mockResolvedValue(qr);
+    expect((await track(post("/api/analytics/event", event))).status).toBe(404);
+    expect(mocks.eventCreate).not.toHaveBeenCalled();
   });
 
   it("stops recording repeated events for one session", async () => {

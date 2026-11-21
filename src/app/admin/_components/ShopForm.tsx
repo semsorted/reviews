@@ -30,7 +30,7 @@ const EMPTY: ShopFormValues = {
   googleReviewUrl: "",
   defaultLanguage: "en",
   logoUrl: "",
-  primaryColor: "#0E4F3F",
+  primaryColor: "#1A73E8",
 };
 
 export function ShopForm({ shop }: { shop?: ShopFormValues }) {

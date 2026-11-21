@@ -81,7 +81,6 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
             Shop details
           </h2>
           <ShopForm
-            key={shop.updatedAt.toISOString()}
             shop={{
               id: shop.id,
               name: shop.name,

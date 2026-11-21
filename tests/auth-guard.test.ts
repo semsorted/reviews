@@ -108,7 +108,7 @@ describe("safeRedirectPath", () => {
     expect(safeRedirectPath("/admin/shops/1")).toBe("/admin/shops/1");
   });
 
-  it.each(["//evil.com", "https://evil.com", "/\\evil.com", "/\t/evil.com", "admin", "", null, undefined])(
+  it.each(["//evil.com", "https://evil.com", "/\\evil.com", "/\t/evil.com", "/.//evil.com", "admin", "", null, undefined])(
     "falls back for %s",
     (value) => {
       expect(safeRedirectPath(value)).toBe("/admin");

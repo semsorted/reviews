@@ -1,21 +1,29 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-mist: #eef3f0;
+  --color-mist: #f8f9fa;
   --color-paper: #ffffff;
-  --color-ink: #14211d;
-  --color-moss: #52645d;
-  --color-pine: #0e4f3f;
-  --color-pine-deep: #093a2e;
-  --color-marigold: #f2a900;
-  --color-line: #cbd8d2;
-  --color-danger: #b3261e;
-  --color-review-ink: #1f2328;
-  --color-review-muted: #5b6168;
-  --color-review-line: #dadde1;
-  --color-review-blue: #1a66d6;
+  --color-ink: #202124;
+  --color-moss: #5f6368;
+  --color-pine: #1a73e8;
+  --color-pine-deep: #1557b0;
+  --color-marigold: #fbbc04;
+  --color-line: #dadce0;
+  --color-danger: #d93025;
+  --color-g-blue: #1a73e8;
+  --color-g-red: #d93025;
+  --color-g-yellow: #fbbc04;
+  --color-g-green: #188038;
+  --color-g-blue-tint: #e8f0fe;
+  --color-g-red-tint: #fce8e6;
+  --color-g-yellow-tint: #fef7e0;
+  --color-g-green-tint: #e6f4ea;
+  --color-review-ink: #202124;
+  --color-review-muted: #5f6368;
+  --color-review-line: #dadce0;
+  --color-review-blue: #1a73e8;
   --color-review-tint: #e8f0fe;
-  --color-review-star: #f9ab00;
+  --color-review-star: #fbbc04;
   --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-mukta), ui-sans-serif, system-ui, sans-serif;
 }
@@ -59,40 +67,6 @@ h3 {
   line-height: 1.3;
 }
 
-.slip {
-  position: relative;
-  background: var(--color-paper);
-  border-radius: 0.75rem 0.75rem 0 0;
-  padding-bottom: 0.75rem;
-  animation: slip-print 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.slip::after {
-  content: "";
-  position: absolute;
-  inset: auto 0 -0.5rem;
-  height: 0.5rem;
-  background: radial-gradient(circle at 0.5rem 0.5rem, var(--color-mist) 0.375rem, var(--color-paper) 0.4rem) repeat-x;
-  background-size: 1rem 0.5rem;
-}
-
 .slip-text {
   field-sizing: content;
-}
-
-@keyframes slip-print {
-  from {
-    clip-path: inset(0 0 100% 0);
-    transform: translateY(-0.5rem);
-  }
-  to {
-    clip-path: inset(0 0 -1rem 0);
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .slip {
-    animation: none;
-  }
 }

@@ -26,7 +26,7 @@ Next.js 16, React 19, Tailwind CSS 4, Prisma 7, Supabase Auth and Postgres, and 
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase public key |
    | `DATABASE_URL` | Yes | Supabase Postgres connection string |
 
-3. Run both SQL files in `supabase/migrations/`, oldest first, using the Supabase SQL editor or CLI.
+3. Run all SQL files in `supabase/migrations/`, oldest first, using the Supabase SQL editor or CLI.
 
 4. Create the admin.
    - In Supabase, open **Authentication > Users** and add a user with a strong password.

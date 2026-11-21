@@ -16,7 +16,7 @@ export const ShopCreateSchema = z.object({
   googleReviewUrl: googleUrlSchema,
   defaultLanguage: languageSchema.default("en"),
   logoUrl: logoUrlSchema.optional(),
-  primaryColor: colorSchema.default("#18181B"),
+  primaryColor: colorSchema.default("#1A73E8"),
   chips: z.array(chipLabelSchema).min(MIN_CHIPS).max(MAX_ACTIVE_CHIPS),
 });
 

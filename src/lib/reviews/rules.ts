@@ -2,6 +2,8 @@ export const MIN_CHIPS = 2;
 export const MAX_CHIPS = 4;
 export const MAX_ACTIVE_CHIPS = 12;
 export const MAX_DRAFTS_PER_SESSION = 5;
+// ponytail: per-QR cap bounds scan-record abuse; add per-IP edge limits if one QR is targeted.
+export const MAX_SCANS_PER_QR_PER_HOUR = 300;
 
 const GOOGLE_REVIEW_HOSTS = new Set([
   "google.com",

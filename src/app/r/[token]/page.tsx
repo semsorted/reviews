@@ -5,8 +5,8 @@ import { notFound } from "next/navigation";
 import type { Metadata, Viewport } from "next";
 import { prisma } from "@/lib/prisma";
 import { toReviewLanguage } from "@/lib/reviews/instant-draft";
+import { recordScan } from "@/lib/reviews/record-scan";
 import { MIN_CHIPS } from "@/lib/reviews/rules";
-import { generateToken } from "@/lib/utils";
 import CustomerReviewClient from "./CustomerReviewClient";
 
 export const viewport: Viewport = { themeColor: "#ffffff" };
@@ -43,7 +43,7 @@ export async function generateMetadata(props: { params: Promise<{ token: string 
   const { token } = await props.params;
   const qr = await getReviewQr(token);
   return {
-    title: qr ? `Review ${qr.shop.name}` : "Review link unavailable",
+    title: { absolute: qr ? `Review ${qr.shop.name}` : "Review link unavailable" },
     robots: { index: false, follow: false },
   };
 }
@@ -59,15 +59,7 @@ export default async function CustomerReviewPage(props: { params: Promise<{ toke
   // Stats are saved after the response, so the customer never waits for them.
   after(async () => {
     try {
-      await prisma.$transaction(async (tx) => {
-        await tx.qrCode.update({ where: { id: qrCodeId }, data: { scanCount: { increment: 1 } } });
-        await tx.reviewSession.create({
-          data: { id: sessionId, shopId: shop.id, qrCodeId, anonymousSessionId: `anon_${generateToken(18)}` },
-        });
-        await tx.analyticsEvent.createMany({
-          data: ["qr_scan", "page_view"].map((eventType) => ({ shopId: shop.id, qrCodeId, sessionId, eventType })),
-        });
-      });
+      await recordScan({ shopId: shop.id, qrCodeId, sessionId });
     } catch (error) {
       console.error("[Review:Scan] Could not record scan", error);
     }

@@ -3,6 +3,15 @@ import { describe, expect, it } from "vitest";
 
 const sql = () => readFileSync("supabase/migrations/20261121000000_chips_and_security.sql", "utf8");
 
+describe("helper function lockdown", () => {
+  it("removes public access to role-check functions", () => {
+    const lockdown = readFileSync("supabase/migrations/20261122000000_lock_down_helpers.sql", "utf8");
+    for (const fn of ["is_super_admin(uuid)", "has_shop_access(uuid, uuid)", "handle_new_user()"]) {
+      expect(lockdown).toContain(`REVOKE EXECUTE ON FUNCTION public.${fn} FROM PUBLIC, anon, authenticated`);
+    }
+  });
+});
+
 describe("chips and security migration", () => {
   it("creates review chips behind RLS", () => {
     expect(sql()).toContain("CREATE TABLE IF NOT EXISTS public.review_chips");

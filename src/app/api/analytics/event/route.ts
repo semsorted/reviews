@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { MAX_DRAFTS_PER_SESSION } from "@/lib/reviews/rules";
+import { uuidSchema } from "@/lib/reviews/schema";
 
 const AnalyticsEventSchema = z.object({
   token: z.string().min(8).max(64),
-  sessionId: z.uuid(),
+  sessionId: uuidSchema,
   eventType: z.enum(["copy_click", "regenerate_click", "google_review_click"]),
-  draftId: z.uuid().optional(),
+  draftId: uuidSchema.optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -20,9 +21,9 @@ export async function POST(request: NextRequest) {
   try {
     const qr = await prisma.qrCode.findUnique({
       where: { publicToken: token },
-      select: { id: true, shop: { select: { id: true } } },
+      select: { id: true, isActive: true, shop: { select: { id: true, isActive: true } } },
     });
-    if (!qr) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!qr?.isActive || !qr.shop.isActive) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const session = await prisma.reviewSession.findUnique({
       where: { id: sessionId },

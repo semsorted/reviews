@@ -8,6 +8,7 @@ const db = vi.hoisted(() => {
     reviewChip: { count: fn(), findFirst: fn(), findMany: fn(), create: fn(), update: fn(), delete: fn() },
     qrCode: { findFirst: fn(), create: fn(), update: fn(), delete: fn() },
     auditLog: { create: fn() },
+    $executeRaw: fn(),
     $transaction: vi.fn(),
   };
   return client;
@@ -146,6 +147,16 @@ describe("chips", () => {
     const response = await chip.PATCH(req("PATCH", { isActive: false }), chipParams);
     expect(response.status).toBe(409);
     expect(db.reviewChip.update).not.toHaveBeenCalled();
+  });
+
+  it("locks the shop before checking the chip floor", async () => {
+    const order: string[] = [];
+    db.$executeRaw.mockImplementation(async () => (order.push("lock"), 0));
+    db.reviewChip.count.mockImplementation(async () => (order.push("count"), 3));
+    db.reviewChip.findFirst.mockResolvedValueOnce({ id: chipId, isActive: true, label: "Taste" });
+    db.reviewChip.update.mockImplementation(async () => (order.push("write"), { id: chipId }));
+    await chip.PATCH(req("PATCH", { isActive: false }), chipParams);
+    expect(order).toEqual(["lock", "count", "write"]);
   });
 
   it("refuses to delete below two active chips", async () => {
