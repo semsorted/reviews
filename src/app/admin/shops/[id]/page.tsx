@@ -52,7 +52,7 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
   return (
     <div className="space-y-5">
       <Link href="/admin/shops" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-moss hover:text-ink">
-        <ArrowLeft aria-hidden className="size-4" /> All shops
+        <ArrowLeft aria-hidden className="size-4" /> All businesses
       </Link>
 
       <header className={cn("relative overflow-hidden rounded-l-md rounded-r-3xl p-6 pl-7 shadow-[inset_12px_0_16px_-10px_rgb(0_0_0/0.4)] sm:p-8 sm:pl-9", TONE_CLASS[shopTone(shop.id)])}>
@@ -69,7 +69,7 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
         </div>
       </header>
 
-      <nav aria-label="Shop sections" className="flex gap-1 overflow-x-auto rounded-full bg-paper p-1">
+      <nav aria-label="Business sections" className="flex gap-1 overflow-x-auto rounded-full bg-paper p-1">
         {TABS.map((item) => {
           const Icon = item.icon;
           return (
@@ -97,7 +97,7 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
               { label: "Average rating", value: tracking.rating.average === null ? "None" : tracking.rating.average.toFixed(1), note: "From customer taps", tone: "yellow" },
             ]}
           />
-          <p className="text-sm text-moss">Sent to Google means the customer opened this shop&apos;s Google review page. Google does not tell us whether they tapped Post.</p>
+          <p className="text-sm text-moss">Sent to Google means the customer opened this business&apos;s Google review page. Google does not tell us whether they tapped Post.</p>
 
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
             <Panel><ActivityChart points={tracking.daily} /></Panel>
@@ -165,7 +165,7 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
             </>
           ) : (
             <p className="flex items-center gap-2 rounded-2xl bg-g-green-tint p-6 font-medium text-g-green">
-              <CircleCheck aria-hidden className="size-5" /> {attentionFilter === "OPEN" ? "No open customer issues for this shop." : "Nothing to show here."}
+              <CircleCheck aria-hidden className="size-5" /> {attentionFilter === "OPEN" ? "No open customer issues for this business." : "Nothing to show here."}
             </p>
           )}
         </>
@@ -192,7 +192,7 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
           </div>
           <aside aria-labelledby="details-title">
             <h2 id="details-title" className="mb-4 text-2xl font-semibold">
-              Shop details
+              Business details
             </h2>
             <ShopForm
               shop={{

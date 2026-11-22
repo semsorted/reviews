@@ -29,6 +29,7 @@
   --color-whatsapp-deep: #075e4e;
   --font-display: var(--font-anek), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-mukta), ui-sans-serif, system-ui, sans-serif;
+  --font-logo: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
 }
 
 html {
@@ -231,4 +232,44 @@ h3 {
 
 .slip-text {
   field-sizing: content;
+}
+
+.qr-sheet {
+  container-type: inline-size;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+@media print {
+  html:has(.qr-sheet),
+  body:has(.qr-sheet),
+  body:has(.qr-sheet) > div {
+    min-height: 0;
+    background: #fff;
+  }
+  body:has(.qr-sheet) aside,
+  body:has(.qr-sheet) > div > header,
+  body:has(.qr-sheet) > div > nav {
+    display: none;
+  }
+  body:has(.qr-sheet) main,
+  body:has(.qr-sheet) main > div {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+  .qr-sheet {
+    width: 210mm;
+    max-width: none;
+    height: 297mm;
+    aspect-ratio: auto;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    break-inside: avoid;
+  }
+  .qr-sheet[data-size="a5"] {
+    width: 148mm;
+    height: 210mm;
+  }
 }

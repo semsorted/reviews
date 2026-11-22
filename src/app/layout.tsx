@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Anek_Devanagari, Mukta } from "next/font/google";
+import { Anek_Devanagari, Mukta, Outfit } from "next/font/google";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -16,6 +16,13 @@ const mukta = Mukta({
   variable: "--font-mukta",
   display: "swap",
   preload: false,
+});
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: "500",
+  variable: "--font-outfit",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -35,7 +42,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${anek.variable} ${mukta.variable} antialiased`}>
+    <html lang="en" className={`${anek.variable} ${mukta.variable} ${outfit.variable} antialiased`}>
       <body>{children}</body>
     </html>
   );

@@ -37,12 +37,12 @@ export function ShopList({ shops, range }: { shops: ShopRow[]; range: string }) 
     <div>
       <div className="relative max-w-sm">
         <Search aria-hidden className="pointer-events-none absolute left-3.5 top-3.5 size-4 text-moss" />
-        <Input aria-label="Search shops" placeholder="Search shops" value={query} onChange={(e) => setQuery(e.target.value)} className="pl-10" />
+        <Input aria-label="Search businesses" placeholder="Search businesses" value={query} onChange={(e) => setQuery(e.target.value)} className="pl-10" />
       </div>
 
       <div className="mt-4 overflow-hidden rounded-2xl bg-paper">
         <div className={cn("hidden gap-3 border-b border-line px-5 py-3 text-sm font-semibold text-moss lg:grid", columns)}>
-          <span>Shop</span>
+          <span>Business</span>
           <span className="text-right">Scans</span>
           <span className="text-right">Reviews</span>
           <span className="text-right">Copied</span>
@@ -53,7 +53,7 @@ export function ShopList({ shops, range }: { shops: ShopRow[]; range: string }) 
         </div>
         <ul className="divide-y divide-line">
           {visible.map((shop) => (
-            <li key={shop.id} className={cn("grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-5 py-3.5", columns)}>
+            <li key={shop.id} className={cn("relative grid transition-colors hover:bg-mist grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-5 py-3.5", columns)}>
               <span className="flex min-w-0 items-center gap-3">
                 <span aria-hidden className={cn("flex size-10 shrink-0 items-center justify-center rounded-l-sm rounded-r-lg font-display text-lg font-semibold shadow-[inset_4px_0_6px_-4px_rgb(0_0_0/0.4)]", TONE_CLASS[shopTone(shop.id)])}>
                   {shop.name.charAt(0).toUpperCase()}
@@ -72,7 +72,7 @@ export function ShopList({ shops, range }: { shops: ShopRow[]; range: string }) 
               <Link
                 href={{ pathname: `/admin/shops/${shop.id}`, query: { range } }}
                 aria-label={`View tracking for ${shop.name}`}
-                className="inline-flex min-h-10 items-center justify-center gap-1.5 justify-self-end rounded-full bg-g-blue-tint px-3.5 text-sm font-semibold text-g-blue hover:bg-g-blue hover:text-white"
+                className="inline-flex min-h-10 items-center justify-center gap-1.5 justify-self-end rounded-full bg-g-blue-tint px-3.5 text-sm font-semibold text-g-blue after:absolute after:inset-0 hover:bg-g-blue hover:text-white"
               >
                 <ChartNoAxesCombined aria-hidden className="size-4" /> <span className="max-sm:sr-only">Tracking</span>
               </Link>
@@ -82,7 +82,7 @@ export function ShopList({ shops, range }: { shops: ShopRow[]; range: string }) 
             </li>
           ))}
         </ul>
-        {visible.length === 0 && <p className="px-5 py-8 text-moss">No shops match “{query}”.</p>}
+        {visible.length === 0 && <p className="px-5 py-8 text-moss">No businesses match “{query}”.</p>}
       </div>
     </div>
   );

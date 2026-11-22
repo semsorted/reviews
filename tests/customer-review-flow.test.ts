@@ -127,6 +127,19 @@ describe("POST /api/review/generate", () => {
     expect(mocks.aiWrite).not.toHaveBeenCalled();
   });
 
+  it("writes the review in the language the customer picked", async () => {
+    const hindi = localCandidates({ shopName: "Sunset Cafe", rating: 4, chips: ["Service", "Taste"], language: "hi" }, sessionId, 0);
+    const response = await record(post("/api/review/generate", { ...body, language: "hi" }));
+    await expect(response.json()).resolves.toMatchObject({ text: hindi[0], source: "instant" });
+    expect(mocks.draftCreate.mock.calls[0][0].data).toMatchObject({ language: "hi", generatedText: hindi[0] });
+  });
+
+  it("rejects a language the page does not offer", async () => {
+    const response = await record(post("/api/review/generate", { ...body, language: "fr" }));
+    expect(response.status).toBe(400);
+    expect(mocks.draftCreate).not.toHaveBeenCalled();
+  });
+
   it.each([1, 2])("adds a %i-star customer to Needs attention", async (rating) => {
     await record(post("/api/review/generate", { ...body, rating }));
     expect(mocks.feedbackUpsert).toHaveBeenCalledWith({

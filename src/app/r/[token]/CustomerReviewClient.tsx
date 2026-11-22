@@ -22,6 +22,11 @@ export interface CustomerReviewClientProps {
   chips: { id: string; label: string }[];
 }
 
+const LANGUAGES: { id: ReviewLanguage; label: string }[] = [
+  { id: "en", label: "English" },
+  { id: "hi", label: "हिंदी" },
+  { id: "hinglish", label: "Hinglish" },
+];
 const RATING_WORDS = ["", "Poor", "Below average", "Okay", "Good", "Excellent"];
 const actionClass =
   "flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-5 text-base font-medium";
@@ -31,7 +36,8 @@ function monogramTextColor(hex: string) {
   return 0.299 * r + 0.587 * g + 0.114 * b > 160 ? "#1f2328" : "#ffffff";
 }
 
-export default function CustomerReviewClient({ token, sessionId, language, shop, chips }: CustomerReviewClientProps) {
+export default function CustomerReviewClient({ token, sessionId, language: defaultLanguage, shop, chips }: CustomerReviewClientProps) {
+  const [language, setLanguage] = useState(defaultLanguage);
   const [rating, setRating] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
   const [draftText, setDraftText] = useState("");
@@ -58,19 +64,19 @@ export default function CustomerReviewClient({ token, sessionId, language, shop,
     draftRef.current?.scrollIntoView({ block: "nearest" });
   }, [hasDraft]);
 
-  const writeDraft = (nextRating: number, nextSelected: string[], nextVariant: number) =>
+  const writeDraft = (nextRating: number, nextSelected: string[], nextVariant: number, nextLanguage: ReviewLanguage) =>
     writeInstantDraft(
       {
         shopName: shop.name,
         rating: nextRating,
         chips: nextSelected.map((id) => chips.find((chip) => chip.id === id)!.label),
-        language,
+        language: nextLanguage,
       },
       seededRandom(`${sessionId}:${nextVariant}`)
     );
 
   // The draft is already on screen. This background check only swaps it if this shop has used it before.
-  const recordDraft = (nextRating: number, nextSelected: string[], nextVariant: number, shownText: string) => {
+  const recordDraft = (nextRating: number, nextSelected: string[], nextVariant: number, nextLanguage: ReviewLanguage, shownText: string) => {
     if (syncTimer.current) clearTimeout(syncTimer.current);
     const syncId = ++syncRef.current;
     syncTimer.current = setTimeout(() => {
@@ -78,7 +84,7 @@ export default function CustomerReviewClient({ token, sessionId, language, shop,
         method: "POST",
         headers: { "Content-Type": "application/json" },
         keepalive: true,
-        body: JSON.stringify({ token, sessionId, rating: nextRating, variant: nextVariant, chipIds: nextSelected }),
+        body: JSON.stringify({ token, sessionId, rating: nextRating, variant: nextVariant, language: nextLanguage, chipIds: nextSelected }),
       })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
@@ -104,18 +110,19 @@ export default function CustomerReviewClient({ token, sessionId, language, shop,
       .catch(() => {});
   };
 
-  const applySelection = (nextRating: number, nextSelected: string[]) => {
+  const applySelection = (nextRating: number, nextSelected: string[], nextLanguage = language) => {
     setRating(nextRating);
     setSelected(nextSelected);
+    setLanguage(nextLanguage);
     setCopyState("idle");
     if (isEdited) {
       setIsStale(true);
       return;
     }
     const ready = nextRating > 0 && nextSelected.length >= MIN_CHIPS;
-    const nextText = ready ? writeDraft(nextRating, nextSelected, variant) : "";
+    const nextText = ready ? writeDraft(nextRating, nextSelected, variant, nextLanguage) : "";
     setDraftText(nextText);
-    if (ready) recordDraft(nextRating, nextSelected, variant, nextText);
+    if (ready) recordDraft(nextRating, nextSelected, variant, nextLanguage, nextText);
   };
 
   const toggleChip = (id: string) => {
@@ -127,12 +134,12 @@ export default function CustomerReviewClient({ token, sessionId, language, shop,
     if (!isReady) return;
     const nextVariant = variant + 1;
     setVariant(nextVariant);
-    const nextText = writeDraft(rating, selected, nextVariant);
+    const nextText = writeDraft(rating, selected, nextVariant, language);
     setDraftText(nextText);
     setIsEdited(false);
     setIsStale(false);
     setCopyState("idle");
-    recordDraft(rating, selected, nextVariant, nextText);
+    recordDraft(rating, selected, nextVariant, language, nextText);
     track("regenerate_click");
   };
 
@@ -196,7 +203,7 @@ export default function CustomerReviewClient({ token, sessionId, language, shop,
         <header className="flex items-center gap-3">
           {shop.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={shop.logoUrl} alt="" className="size-11 rounded-full object-cover" />
+            <img src={shop.logoUrl} alt="" className="size-11 shrink-0 rounded-full object-cover" />
           ) : (
             <div
               aria-hidden
@@ -212,7 +219,31 @@ export default function CustomerReviewClient({ token, sessionId, language, shop,
           </div>
         </header>
 
-        <fieldset className="mt-5 border-t border-review-line pt-6 text-center">
+        <fieldset className="mt-5 border-t border-review-line pt-4">
+          <legend className="contents">
+            <h2 className="text-center text-sm font-medium text-review-muted">Choose your review language</h2>
+          </legend>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {LANGUAGES.map((option) => {
+              const isChosen = language === option.id;
+              return (
+                <label
+                  key={option.id}
+                  className={cn(
+                    "flex min-h-12 cursor-pointer items-center justify-center gap-1 rounded-lg border px-1 text-[0.9375rem] font-medium has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-review-blue",
+                    isChosen ? "border-review-blue bg-review-tint text-review-blue" : "border-review-line bg-white"
+                  )}
+                >
+                  <input type="radio" name="language" value={option.id} checked={isChosen} onChange={() => applySelection(rating, selected, option.id)} className="sr-only" />
+                  {isChosen && <Check aria-hidden className="size-4 shrink-0" strokeWidth={2.5} />}
+                  {option.label}
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <fieldset className="mt-5 border-t border-review-line pt-5 text-center">
           <legend className="contents">
             <h2 className="text-lg font-medium">How was your visit?</h2>
           </legend>

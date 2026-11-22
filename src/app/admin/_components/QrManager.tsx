@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Download, Link2, Trash2 } from "lucide-react";
+import { Check, Download, Link2, Printer, Trash2 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -103,6 +104,9 @@ export function QrManager({ shopId, qrCodes }: { shopId: string; qrCodes: Qr[] }
               </p>
               <p className="mt-1 truncate text-sm text-moss">{qr.url}</p>
               <div className="mt-3 flex flex-wrap gap-1.5">
+                <Link href={`/admin/shops/${shopId}/qr/${qr.id}`} className={buttonVariants({ size: "sm" })}>
+                  <Printer aria-hidden className="size-4" /> Print poster
+                </Link>
                 <a href={`${base}/${qr.id}/download?format=png`} className={buttonVariants({ variant: "outline", size: "sm" })}>
                   <Download aria-hidden className="size-4" /> PNG
                 </a>

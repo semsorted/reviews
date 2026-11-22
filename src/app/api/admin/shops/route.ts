@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
         },
         auditLogs: { create: { userId: admin.id, action: "shop.create", entityType: "Shop" } },
       },
-      select: { id: true },
+      select: { id: true, qrCodes: { select: { id: true } } },
     });
 
     return NextResponse.json({ shop }, { status: 201 });

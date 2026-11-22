@@ -11,10 +11,10 @@ export default function OpenGraphImage() {
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 72, background: "#ffffff", color: "#202124" }}>
         <div style={{ display: "flex", alignItems: "center", fontSize: 48, fontWeight: 700 }}>
           <svg width="76" height="76" viewBox="-2 -2 52 52" style={{ marginRight: 12 }}>
-            <path fill="none" stroke="#1a73e8" strokeWidth="8.5" d="M34 14A10 10 0 1 0 24 24" />
-            <path fill="none" stroke="#34a853" strokeWidth="8.5" d="M24 24A10 10 0 1 1 14 34" />
-            <circle cx="34" cy="14" r="4.25" fill="#ea4335" />
-            <polygon fill="#fbbc04" points="14,27.4 15.78,31.54 20.28,31.96 16.89,34.94 17.88,39.34 14,37.04 10.12,39.34 11.11,34.94 7.72,31.96 12.22,31.54" />
+            <path fill="none" stroke="#ea4335" strokeWidth="8.5" d="M34 14A10 10 0 0 0 14 14" />
+            <path fill="none" stroke="#fbbc05" strokeWidth="8.5" d="M14 14A10 10 0 0 0 24 24" />
+            <path fill="none" stroke="#34a853" strokeWidth="8.5" d="M24 24A10 10 0 0 1 34 34" />
+            <path fill="none" stroke="#4285f4" strokeWidth="8.5" d="M34 34A10 10 0 0 1 14 34" />
           </svg>
           {WORDMARK.map(([letter, color], index) => (
             <span key={index} style={{ color }}>{letter}</span>

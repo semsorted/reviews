@@ -12,6 +12,7 @@ const RecordDraftSchema = z.object({
   sessionId: uuidSchema,
   rating: z.number().int().min(1).max(5),
   variant: z.number().int().min(0).max(999).default(0),
+  language: z.enum(["en", "hi", "hinglish"]).optional(),
   chipIds: z
     .array(uuidSchema)
     .min(MIN_CHIPS)
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Please choose a rating and 2 to 4 options." }, { status: 400 });
   }
-  const { token, sessionId, rating, variant, chipIds } = parsed.data;
+  const { token, sessionId, rating, variant, chipIds, language: pickedLanguage } = parsed.data;
 
   try {
     const [qr, session] = await Promise.all([
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Those options changed. Please refresh and try again." }, { status: 400 });
     }
     const labels = chipIds.map((id) => shop.chips.find((chip) => chip.id === id)!.label);
-    const language = toReviewLanguage(shop.defaultLanguage);
+    const language = pickedLanguage ?? toReviewLanguage(shop.defaultLanguage);
     const owner = { shopId: shop.id, sessionId, rating, customerNotes: `Rating ${rating}: ${labels.join(", ")}`, language };
     const candidates = localCandidates({ shopName: shop.name, rating, chips: labels, language }, sessionId, variant);
 

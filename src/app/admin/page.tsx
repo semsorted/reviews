@@ -21,10 +21,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       <>
         <PageHead title="Dashboard" />
         <div className="relative mt-6 overflow-hidden rounded-l-md rounded-r-3xl bg-g-blue p-8 text-white shadow-[inset_12px_0_16px_-10px_rgb(0_0_0/0.4)] sm:p-12">
-          <h2 className="max-w-[16ch] text-[clamp(2.25rem,5vw,3.75rem)] font-semibold leading-none">Add your first shop</h2>
-          <p className="mt-4 max-w-md text-white/90">Enter the shop details and chips. Its QR code is created automatically, and tracking starts from the first scan.</p>
+          <h2 className="max-w-[16ch] text-[clamp(2.25rem,5vw,3.75rem)] font-semibold leading-none">Add your first business</h2>
+          <p className="mt-4 max-w-md text-white/90">Choose its type and enter the name. Its chips and QR poster are created automatically, and tracking starts from the first scan.</p>
           <Link href="/admin/shops/new" className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 font-semibold text-g-blue">
-            <Plus aria-hidden className="size-4" /> Add shop
+            <Plus aria-hidden className="size-4" /> Add business
           </Link>
         </div>
       </>
@@ -35,8 +35,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     <div className="space-y-5">
       <PageHead
         title="Dashboard"
-        text={`${shops.length} ${shops.length === 1 ? "shop" : "shops"}. Dates use India time.`}
-        action={<Link href="/admin/shops/new" className={cn(buttonVariants(), "max-lg:hidden")}><Plus aria-hidden className="size-4" /> Add shop</Link>}
+        text={`${shops.length} ${shops.length === 1 ? "business" : "businesses"}. Dates use India time.`}
+        action={<Link href="/admin/shops/new" className={cn(buttonVariants(), "max-lg:hidden")}><Plus aria-hidden className="size-4" /> Add business</Link>}
       />
       <RangeTabs base="/admin" range={range} />
       <CoverStats
@@ -76,7 +76,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]">
-        <Panel title="Top shops" action={<Link href={{ pathname: "/admin/tracking", query: { range } }} className="inline-flex min-h-10 items-center text-sm font-semibold text-g-blue hover:underline">Open tracking</Link>}>
+        <Panel title="Top businesses" action={<Link href={{ pathname: "/admin/tracking", query: { range } }} className="inline-flex min-h-10 items-center text-sm font-semibold text-g-blue hover:underline">Open tracking</Link>}>
           <ul className="divide-y divide-line">
             {topShops.map((shop) => (
               <li key={shop.id}>

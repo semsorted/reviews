@@ -102,7 +102,7 @@ export function ShopFilter({ shops, value, status }: { shops: { id: string; name
   const router = useRouter();
   return (
     <label className="block">
-      <span className="sr-only">Filter by shop</span>
+      <span className="sr-only">Filter by business</span>
       <select
         value={value}
         onChange={(event) => {
@@ -112,7 +112,7 @@ export function ShopFilter({ shops, value, status }: { shops: { id: string; name
         }}
         className="h-11 max-w-full rounded-full border border-line bg-paper px-4 font-medium outline-none focus:border-g-blue"
       >
-        <option value="">All shops</option>
+        <option value="">All businesses</option>
         {shops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}
       </select>
     </label>

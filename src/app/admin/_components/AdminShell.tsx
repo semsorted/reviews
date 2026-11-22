@@ -10,7 +10,7 @@ const NAV = [
   { href: "/admin", label: "Dashboard", short: "Home", icon: LayoutDashboard, tint: "bg-g-blue text-white" },
   { href: "/admin/attention", label: "Needs attention", short: "Attention", icon: BellRing, tint: "bg-g-red text-white" },
   { href: "/admin/tracking", label: "Tracking", short: "Tracking", icon: ChartNoAxesCombined, tint: "bg-g-green text-white" },
-  { href: "/admin/shops", label: "Shops", short: "Shops", icon: Store, tint: "bg-g-yellow text-ink" },
+  { href: "/admin/shops", label: "Businesses", short: "Business", icon: Store, tint: "bg-g-yellow text-ink" },
 ];
 
 function SignOut({ className }: { className?: string }) {
@@ -56,7 +56,7 @@ export function AdminShell({ openCount, children }: { openCount: number; childre
           })}
         </nav>
         <Link href="/admin/shops/new" className="mb-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-g-blue font-semibold text-white hover:bg-pine-deep">
-          <Plus aria-hidden className="size-4" /> Add shop
+          <Plus aria-hidden className="size-4" /> Add business
         </Link>
         <SignOut className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full text-sm font-semibold text-white/75 hover:bg-white/10 hover:text-white" />
       </aside>
@@ -64,7 +64,7 @@ export function AdminShell({ openCount, children }: { openCount: number; childre
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-paper px-4 lg:hidden">
         <Link href="/admin" aria-label="Semsorted dashboard"><Logo /></Link>
         <div className="flex items-center gap-1">
-          <Link href="/admin/shops/new" aria-label="Add shop" className="flex size-11 items-center justify-center rounded-full bg-g-blue text-white"><Plus aria-hidden className="size-5" /></Link>
+          <Link href="/admin/shops/new" aria-label="Add business" className="flex size-11 items-center justify-center rounded-full bg-g-blue text-white"><Plus aria-hidden className="size-5" /></Link>
           <SignOut className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-2.5 text-sm font-semibold text-moss" />
         </div>
       </header>

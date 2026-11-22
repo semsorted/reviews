@@ -6,9 +6,12 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { chipsForShopType, isCatalogShopType, SHOP_TYPE_GROUPS, SHOP_TYPES } from "@/lib/reviews/catalog";
+import { groupColor } from "@/lib/qr/poster";
+import { chipsForShopType } from "@/lib/reviews/catalog";
 import { MAX_ACTIVE_CHIPS, MIN_CHIPS } from "@/lib/reviews/rules";
+import { BusinessTypePicker } from "./BusinessTypePicker";
 import { ConfirmButton } from "./ConfirmButton";
+import { LogoField } from "./LogoField";
 import { adminRequest } from "./request";
 
 export interface ShopFormValues {
@@ -22,8 +25,6 @@ export interface ShopFormValues {
   isActive?: boolean;
 }
 
-const OTHER_TYPE = "__other";
-
 const EMPTY: ShopFormValues = {
   name: "",
   businessCategory: "",
@@ -36,7 +37,6 @@ const EMPTY: ShopFormValues = {
 export function ShopForm({ shop }: { shop?: ShopFormValues }) {
   const router = useRouter();
   const [values, setValues] = useState<ShopFormValues>(shop ?? EMPTY);
-  const [isOtherType, setIsOtherType] = useState(Boolean(shop) && !isCatalogShopType(shop?.businessCategory ?? ""));
   const [chips, setChips] = useState<string[]>([]);
   const [chipDraft, setChipDraft] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -48,12 +48,11 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
     setValues((current) => ({ ...current, [key]: value }));
   };
 
-  const chooseShopType = (value: string) => {
-    const isOther = value === OTHER_TYPE;
-    setIsOtherType(isOther);
-    update("businessCategory", isOther ? "" : value);
+  const chooseShopType = (type: string) => {
+    setSaved(false);
     setError(null);
-    if (!shop) setChips(value ? chipsForShopType(isOther ? "" : value) : []);
+    setValues((current) => ({ ...current, businessCategory: type, primaryColor: shop ? current.primaryColor : groupColor(type) }));
+    if (!shop) setChips(chipsForShopType(type).slice(0, MAX_ACTIVE_CHIPS));
   };
 
   const addChip = () => {
@@ -64,7 +63,7 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
       return;
     }
     if (chips.length >= MAX_ACTIVE_CHIPS) {
-      setError(`A shop can have up to ${MAX_ACTIVE_CHIPS} chips.`);
+      setError(`A business can have up to ${MAX_ACTIVE_CHIPS} chips.`);
       return;
     }
     setError(null);
@@ -98,7 +97,7 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
     };
     const result = shop
       ? await adminRequest(`/api/admin/shops/${shop.id}`, "PATCH", details)
-      : await adminRequest<{ shop: { id: string } }>("/api/admin/shops", "POST", { ...details, chips });
+      : await adminRequest<{ shop: { id: string; qrCodes: { id: string }[] } }>("/api/admin/shops", "POST", { ...details, chips });
     setIsSaving(false);
 
     if (!result.ok) {
@@ -109,7 +108,8 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
       setSaved(true);
       router.refresh();
     } else {
-      router.push(`/admin/shops/${(result.data as { shop: { id: string } }).shop.id}`);
+      const created = (result.data as { shop: { id: string; qrCodes: { id: string }[] } }).shop;
+      router.push(`/admin/shops/${created.id}/qr/${created.qrCodes[0].id}`);
     }
   };
 
@@ -134,107 +134,85 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
   return (
     <form onSubmit={submit} className="space-y-5">
       <div>
-        <Label htmlFor="name">Shop name</Label>
-        <Input id="name" required minLength={2} maxLength={80} value={values.name} onChange={(e) => update("name", e.target.value)} />
-      </div>
-      <div>
-        <Label htmlFor="shop-type">Shop type</Label>
-        <select
-          id="shop-type"
-          required
-          value={isOtherType ? OTHER_TYPE : values.businessCategory}
-          onChange={(e) => chooseShopType(e.target.value)}
-          className="block min-h-11 w-full rounded-lg border border-line bg-paper px-3 text-base"
-        >
-          <option value="">Choose a shop type</option>
-          {SHOP_TYPE_GROUPS.map((group) => (
-            <optgroup key={group} label={group}>
-              {SHOP_TYPES.filter((type) => type.group === group).map((type) => (
-                <option key={type.label} value={type.label}>
-                  {type.label}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-          <option value={OTHER_TYPE}>Other</option>
-        </select>
-        {isOtherType && (
-          <Input
-            aria-label="Your shop type"
-            required
-            minLength={2}
-            maxLength={60}
-            placeholder="Type your business"
-            value={values.businessCategory}
-            onChange={(e) => update("businessCategory", e.target.value)}
-            className="mt-2"
-          />
-        )}
-      </div>
-      <div>
-        <Label htmlFor="google">Google review link</Label>
-        <Input id="google" type="url" required placeholder="https://g.page/r/your-shop/review" value={values.googleReviewUrl} onChange={(e) => update("googleReviewUrl", e.target.value)} />
-        <p className="mt-1 text-sm text-moss">Find it in Google Business Profile under “Ask for reviews”.</p>
-      </div>
-      <div className="grid grid-cols-[1fr_auto] gap-4">
-        <div>
-          <Label htmlFor="language">Review language</Label>
-          <select
-            id="language"
-            value={values.defaultLanguage}
-            onChange={(e) => update("defaultLanguage", e.target.value)}
-            className="block min-h-11 w-full rounded-lg border border-line bg-paper px-3 text-base"
-          >
-            <option value="en">English</option>
-            <option value="hi">Hindi</option>
-            <option value="hinglish">Hinglish</option>
-          </select>
-        </div>
-        <div>
-          <Label htmlFor="color">Color</Label>
-          <input
-            id="color"
-            type="color"
-            value={values.primaryColor}
-            onChange={(e) => update("primaryColor", e.target.value)}
-            className="block h-11 w-16 cursor-pointer rounded-lg border border-line bg-paper p-1"
-          />
-        </div>
-      </div>
-      <div>
-        <Label htmlFor="logo">Logo link (optional)</Label>
-        <Input id="logo" type="url" placeholder="https://..." value={values.logoUrl} onChange={(e) => update("logoUrl", e.target.value)} />
+        <p className="mb-1.5 font-medium">What kind of business?</p>
+        <BusinessTypePicker value={values.businessCategory} onChoose={chooseShopType} />
       </div>
 
-      {!shop && (
-        <div>
-          <Label htmlFor="chip">Chips customers can tap</Label>
-          {chips.length > 0 && <p className="mb-2 text-sm text-moss">Ready for this shop type. Remove any or add your own.</p>}
-          <div className="flex gap-2">
-            <Input id="chip" maxLength={40} placeholder="Add a chip" value={chipDraft} onChange={(e) => setChipDraft(e.target.value)} onKeyDown={onChipKey} />
-            <Button type="button" variant="outline" onClick={addChip}>
-              Add
-            </Button>
+      {values.businessCategory && (
+        <>
+          <div>
+            <Label htmlFor="name">{values.businessCategory} name</Label>
+            <Input id="name" required minLength={2} maxLength={80} value={values.name} onChange={(e) => update("name", e.target.value)} />
           </div>
-          {chips.length === 0 && <p className="mt-1 text-sm text-moss">Choose a shop type to fill these automatically.</p>}
-          {chips.length > 0 && (
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {chips.map((chip) => (
-                <li key={chip} className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-paper pl-4 pr-1 font-medium">
-                  {chip}
-                  <button
-                    type="button"
-                    aria-label={`Remove ${chip}`}
-                    onClick={() => setChips(chips.filter((item) => item !== chip))}
-                    className="flex size-9 items-center justify-center rounded-full text-moss hover:bg-ink/5"
-                  >
-                    <X aria-hidden className="size-4" />
-                  </button>
-                </li>
-              ))}
-            </ul>
+          <LogoField value={values.logoUrl} onChange={(logo) => update("logoUrl", logo)} />
+          <div>
+            <Label htmlFor="google">Google review link</Label>
+            <Input id="google" type="url" required placeholder="https://g.page/r/your-business/review" value={values.googleReviewUrl} onChange={(e) => update("googleReviewUrl", e.target.value)} />
+            <p className="mt-1 text-sm text-moss">Find it in Google Business Profile under “Ask for reviews”.</p>
+          </div>
+
+          {!shop && (
+            <details className="rounded-xl border border-line bg-paper">
+              <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-2 px-4 font-semibold">
+                Customer chips <span className="text-sm font-medium text-moss">{chips.length} ready</span>
+              </summary>
+              <div className="border-t border-line p-4">
+                <div className="flex gap-2">
+                  <Input aria-label="Add a chip" maxLength={40} placeholder="Add a chip" value={chipDraft} onChange={(e) => setChipDraft(e.target.value)} onKeyDown={onChipKey} />
+                  <Button type="button" variant="outline" onClick={addChip}>
+                    Add
+                  </Button>
+                </div>
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {chips.map((chip) => (
+                    <li key={chip} className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-paper pl-4 pr-1 font-medium">
+                      {chip}
+                      <button
+                        type="button"
+                        aria-label={`Remove ${chip}`}
+                        onClick={() => setChips(chips.filter((item) => item !== chip))}
+                        className="flex size-9 items-center justify-center rounded-full text-moss hover:bg-ink/5"
+                      >
+                        <X aria-hidden className="size-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </details>
           )}
-        </div>
+
+          <details className="rounded-xl border border-line bg-paper">
+            <summary className="flex min-h-12 cursor-pointer items-center px-4 font-semibold">Poster language and color</summary>
+            <div className="space-y-4 border-t border-line p-4">
+              <div className="grid grid-cols-[1fr_auto] gap-4">
+                <div>
+                  <Label htmlFor="language">Poster language</Label>
+                  <select
+                    id="language"
+                    value={values.defaultLanguage}
+                    onChange={(e) => update("defaultLanguage", e.target.value)}
+                    className="block min-h-11 w-full rounded-lg border border-line bg-paper px-3 text-base"
+                  >
+                    <option value="en">English</option>
+                    <option value="hi">Hindi</option>
+                    <option value="hinglish">Hinglish</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="color">Color</Label>
+                  <input
+                    id="color"
+                    type="color"
+                    value={values.primaryColor}
+                    onChange={(e) => update("primaryColor", e.target.value)}
+                    className="block h-11 w-16 cursor-pointer rounded-lg border border-line bg-paper p-1"
+                  />
+                </div>
+              </div>
+            </div>
+          </details>
+        </>
       )}
 
       {error && (
@@ -248,24 +226,26 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
         </p>
       )}
 
-      <Button type="submit" isLoading={isSaving} className="w-full">
-        {shop ? "Save changes" : "Create shop and QR code"}
-      </Button>
+      {values.businessCategory && (
+        <Button type="submit" isLoading={isSaving} className="w-full">
+          {shop ? "Save changes" : "Create and open QR poster"}
+        </Button>
+      )}
 
       {shop && (
         <div className="flex flex-wrap gap-2 border-t border-line pt-5">
           <Button type="button" variant="outline" onClick={() => setActive(!values.isActive)}>
-            {values.isActive ? "Pause shop" : "Activate shop"}
+            {values.isActive ? "Pause business" : "Activate business"}
           </Button>
           <ConfirmButton
             variant="ghost"
             className="text-danger"
-            title="Delete this shop?"
+            title="Delete this business?"
             message="Its chips, QR codes, and review data will be deleted. Printed QR codes will stop working. This cannot be undone."
-            confirmLabel="Delete shop"
+            confirmLabel="Delete business"
             onConfirm={deleteShop}
           >
-            Delete shop
+            Delete business
           </ConfirmButton>
         </div>
       )}

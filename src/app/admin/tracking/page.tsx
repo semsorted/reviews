@@ -14,7 +14,7 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="space-y-5">
-      <PageHead title="Tracking" text="Compare every shop, then open one to see its reviews, ratings, chips and QR performance." />
+      <PageHead title="Tracking" text="Compare every business, then open one to see its reviews, ratings, chips and QR performance." />
       <RangeTabs base="/admin/tracking" range={range} />
       <CoverStats
         stats={[
@@ -25,8 +25,8 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
         ]}
       />
       <section aria-labelledby="track-shops">
-        <h2 id="track-shops" className="mb-3 text-2xl font-semibold">Shop tracking</h2>
-        {shops.length ? <ShopList shops={shops} range={range} /> : <p className="rounded-2xl bg-paper p-6 text-moss">Add a shop to start tracking.</p>}
+        <h2 id="track-shops" className="mb-3 text-2xl font-semibold">Business tracking</h2>
+        {shops.length ? <ShopList shops={shops} range={range} /> : <p className="rounded-2xl bg-paper p-6 text-moss">Add a business to start tracking.</p>}
       </section>
       <Panel><ActivityChart points={daily} /></Panel>
       <div className="grid gap-5 md:grid-cols-2">

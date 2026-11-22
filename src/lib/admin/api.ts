@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { isLogoImage } from "@/lib/admin/logo";
 import { isAllowedGoogleReviewUrl, MAX_ACTIVE_CHIPS, MIN_CHIPS } from "@/lib/reviews/rules";
 
 export const chipLabelSchema = z.string().trim().min(1).max(40);
 const nameSchema = z.string().trim().min(2).max(80);
 const categorySchema = z.string().trim().min(2).max(60);
 const googleUrlSchema = z.string().trim().refine(isAllowedGoogleReviewUrl);
-const logoUrlSchema = z.union([z.literal(""), z.url({ protocol: /^https$/ })]);
+const logoUrlSchema = z.union([z.literal(""), z.url({ protocol: /^https$/ }).max(2048), z.string().refine(isLogoImage)]);
 const colorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
 const languageSchema = z.enum(["en", "hi", "hinglish"]);
 

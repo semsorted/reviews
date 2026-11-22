@@ -9,9 +9,9 @@ export default async function NewShopPage() {
   return (
     <div className="mx-auto max-w-xl">
       <Link href="/admin/shops" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-moss hover:text-ink">
-        <ArrowLeft aria-hidden className="size-4" /> Shops
+        <ArrowLeft aria-hidden className="size-4" /> Businesses
       </Link>
-      <h1 className="mb-6 mt-2 text-[2.35rem] font-bold">Add a shop</h1>
+      <h1 className="mb-6 mt-2 text-[2.35rem] font-bold">Add a business</h1>
       <ShopForm />
     </div>
   );
