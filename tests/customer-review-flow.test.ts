@@ -84,6 +84,7 @@ const activeQr = {
     name: "Sunset Cafe",
     defaultLanguage: "hinglish",
     isActive: true,
+    subscriptionEndsAt: new Date("2099-01-01T00:00:00Z"),
     chips: [
       { id: chipA, label: "Taste" },
       { id: chipB, label: "Service" },
@@ -261,6 +262,7 @@ describe("POST /api/review/generate", () => {
     ["unknown token", null],
     ["inactive QR", { ...activeQr, isActive: false }],
     ["inactive shop", { ...activeQr, shop: { ...activeQr.shop, isActive: false } }],
+    ["expired subscription", { ...activeQr, shop: { ...activeQr.shop, subscriptionEndsAt: new Date("2020-01-01T00:00:00Z") } }],
   ])("returns 404 for %s", async (_name, qr) => {
     mocks.qrFind.mockResolvedValue(qr);
     expect((await record(post("/api/review/generate", body))).status).toBe(404);
@@ -354,6 +356,7 @@ describe("POST /api/analytics/event", () => {
   it.each([
     ["paused QR", { ...activeQr, isActive: false }],
     ["paused shop", { ...activeQr, shop: { ...activeQr.shop, isActive: false } }],
+    ["expired subscription", { ...activeQr, shop: { ...activeQr.shop, subscriptionEndsAt: new Date("2020-01-01T00:00:00Z") } }],
   ])("ignores events for a %s", async (_name, qr) => {
     mocks.qrFind.mockResolvedValue(qr);
     expect((await track(post("/api/analytics/event", event))).status).toBe(404);

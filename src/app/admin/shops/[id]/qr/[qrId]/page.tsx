@@ -7,6 +7,7 @@ import { requireAdminPage } from "@/lib/auth/guard";
 import { prisma } from "@/lib/prisma";
 import { posterFor } from "@/lib/qr/poster";
 import { generateQrSvg } from "@/lib/qr/generator";
+import { isSubscribed } from "@/lib/subscription";
 import { cn } from "@/lib/utils";
 import { BUSINESS_GROUPS } from "../../../../_components/business-groups";
 import { PrintButton } from "../../../../_components/PrintButton";
@@ -30,7 +31,7 @@ export default async function QrPosterPage({ params, searchParams }: { params: P
       name: true,
       isActive: true,
       publicToken: true,
-      shop: { select: { name: true, businessCategory: true, defaultLanguage: true, logoUrl: true, primaryColor: true, isActive: true } },
+      shop: { select: { name: true, businessCategory: true, defaultLanguage: true, logoUrl: true, primaryColor: true, isActive: true, subscriptionEndsAt: true } },
     },
   });
   if (!qr) notFound();
@@ -58,7 +59,9 @@ export default async function QrPosterPage({ params, searchParams }: { params: P
           </nav>
           <PrintButton />
         </div>
-        {(!qr.isActive || !shop.isActive) && (
+        {!isSubscribed(shop.subscriptionEndsAt) ? (
+          <p role="alert" className="rounded-xl bg-g-red-tint p-3 text-sm font-semibold text-g-red">This subscription has ended. Renew it before printing, or customers cannot use this QR.</p>
+        ) : (!qr.isActive || !shop.isActive) && (
           <p role="alert" className="rounded-xl bg-g-red-tint p-3 text-sm font-semibold text-g-red">This QR is paused. Customers cannot use it until you activate it.</p>
         )}
       </div>
@@ -107,7 +110,7 @@ export default async function QrPosterPage({ params, searchParams }: { params: P
           {qr.name !== "Main QR" && <span className="text-[2.6cqw] font-semibold text-[#5f6368]">{qr.name}</span>}
         </div>
         <div aria-hidden className="grid h-[1.5cqw] shrink-0 grid-cols-4">
-          <span className="bg-[#4285f4]" /><span className="bg-[#ea4335]" /><span className="bg-[#fbbc05]" /><span className="bg-[#34a853]" />
+          <span className="bg-[#1a56db]" /><span className="bg-[#12a150]" /><span className="bg-[#e5484d]" /><span className="bg-[#f5b301]" />
         </div>
       </article>
     </div>

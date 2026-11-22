@@ -64,6 +64,7 @@ model Shop {
   defaultLanguage       String   @default("en") @map("default_language")
   defaultAiProvider     String   @default("gemini") @map("default_ai_provider")
   isActive              Boolean  @default(true) @map("is_active")
+  subscriptionEndsAt    DateTime @default(dbgenerated("(now() + '1 year'::interval)")) @map("subscription_ends_at") @db.Timestamptz(3)
   createdAt             DateTime @default(now()) @map("created_at")
   updatedAt             DateTime @updatedAt @map("updated_at")
 
@@ -81,6 +82,7 @@ model Shop {
 
   @@index([ownerId])
   @@index([slug])
+  @@index([subscriptionEndsAt], map: "shops_subscription_ends_at_idx")
   @@map("shops")
 }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { uuidSchema } from "@/lib/reviews/schema";
+import { isSubscribed } from "@/lib/subscription";
 
 const FeedbackSchema = z.object({
   token: z.string().min(8).max(64),
@@ -23,11 +24,11 @@ export async function POST(request: NextRequest) {
     const [qr, session] = await Promise.all([
       prisma.qrCode.findUnique({
         where: { publicToken: token },
-        select: { id: true, isActive: true, shop: { select: { id: true, isActive: true } } },
+        select: { id: true, isActive: true, shop: { select: { id: true, isActive: true, subscriptionEndsAt: true } } },
       }),
       prisma.reviewSession.findUnique({ where: { id: sessionId }, select: { qrCodeId: true } }),
     ]);
-    if (!qr?.isActive || !qr.shop.isActive) return NextResponse.json({ error: "This review link is no longer active." }, { status: 404 });
+    if (!qr?.isActive || !qr.shop.isActive || !isSubscribed(qr.shop.subscriptionEndsAt)) return NextResponse.json({ error: "This review link is no longer active." }, { status: 404 });
     if (session?.qrCodeId !== qr.id) return NextResponse.json({ error: "Please scan the QR code again." }, { status: 403 });
 
     const existing = await prisma.reviewFeedback.findUnique({ where: { sessionId }, select: { message: true } });

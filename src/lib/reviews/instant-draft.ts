@@ -1,4 +1,5 @@
 import type { ReviewLanguage } from "@/lib/ai/provider.interface";
+import { hindiChip } from "./chip-hindi";
 
 export interface InstantDraftInput {
   shopName: string;
@@ -134,7 +135,7 @@ export function writeInstantDraft(input: InstantDraftInput, random: () => number
   const ordered = chips
     .map((chip) => ({ chip, key: random() }))
     .sort((a, b) => a.key - b.key)
-    .map(({ chip }) => topicText(chip));
+    .map(({ chip }) => topicText(language === "hi" ? hindiChip(chip) : chip));
 
   return [open(shopName), topic(joinTopics(ordered, language)), close].join(" ");
 }

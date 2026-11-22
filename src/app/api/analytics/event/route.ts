@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { MAX_DRAFTS_PER_SESSION } from "@/lib/reviews/rules";
 import { uuidSchema } from "@/lib/reviews/schema";
+import { isSubscribed } from "@/lib/subscription";
 
 const AnalyticsEventSchema = z.object({
   token: z.string().min(8).max(64),
@@ -22,9 +23,9 @@ export async function POST(request: NextRequest) {
   try {
     const qr = await prisma.qrCode.findUnique({
       where: { publicToken: token },
-      select: { id: true, isActive: true, shop: { select: { id: true, isActive: true } } },
+      select: { id: true, isActive: true, shop: { select: { id: true, isActive: true, subscriptionEndsAt: true } } },
     });
-    if (!qr?.isActive || !qr.shop.isActive) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!qr?.isActive || !qr.shop.isActive || !isSubscribed(qr.shop.subscriptionEndsAt)) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const session = await prisma.reviewSession.findUnique({
       where: { id: sessionId },

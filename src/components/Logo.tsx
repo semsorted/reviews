@@ -1,42 +1,36 @@
 import { cn } from "@/lib/utils";
 
-const BLUE = "#4285f4";
-const RED = "#ea4335";
-const YELLOW = "#fbbc05";
-const GREEN = "#34a853";
+const NAVY = "#0b2447";
+const BLUE = "#1a56db";
+const GREEN = "#12a150";
+const RED = "#e5484d";
+const GOLD = "#f5b301";
 
 export const WORDMARK = [
-  ["S", BLUE],
-  ["e", RED],
-  ["m", YELLOW],
-  ["s", BLUE],
-  ["o", GREEN],
-  ["r", RED],
-  ["t", YELLOW],
-  ["e", BLUE],
-  ["d", GREEN],
+  ["Sem", NAVY],
+  ["sorted", BLUE],
 ] as const;
+
+export const LOGO_STAR = "38.5,30.5 40.71,35 45.66,35.72 42.08,39.21 42.92,44.14 38.5,41.82 34.08,44.14 34.92,39.21 31.34,35.72 36.29,35";
 
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg aria-hidden viewBox="-2 -2 52 52" className={className}>
-      <g fill="none" strokeWidth="8.5">
-        <path stroke={RED} d="M34 14A10 10 0 0 0 14 14" />
-        <path stroke={YELLOW} d="M14 14A10 10 0 0 0 24 24" />
-        <path stroke={GREEN} d="M24 24A10 10 0 0 1 34 34" />
-        <path stroke={BLUE} d="M34 34A10 10 0 0 1 14 34" />
-      </g>
+    <svg aria-hidden viewBox="0 0 48 48" className={className}>
+      <rect x="14" y="5" width="30" height="10" rx="5" fill={BLUE} />
+      <rect x="4" y="19" width="40" height="10" rx="5" fill={GREEN} />
+      <rect x="4" y="33" width="24" height="10" rx="5" fill={RED} />
+      <polygon fill={GOLD} points={LOGO_STAR} />
     </svg>
   );
 }
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-1.5 font-logo text-[1.5rem] font-medium leading-none tracking-normal", className)}>
-      <LogoMark className="size-[1.33em] shrink-0" />
+    <span className={cn("inline-flex items-center gap-2 font-logo text-[1.5rem] font-semibold leading-none tracking-[-0.02em]", className)}>
+      <LogoMark className="size-[1.25em] shrink-0" />
       <span>
-        {WORDMARK.map(([letter, color], index) => (
-          <span key={index} style={{ color }}>{letter}</span>
+        {WORDMARK.map(([part, color]) => (
+          <span key={part} style={{ color }}>{part}</span>
         ))}
       </span>
     </span>

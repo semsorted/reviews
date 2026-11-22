@@ -8,12 +8,14 @@ import { formatWhen, parseRange, percent } from "@/lib/admin/tracking-core";
 import { shopTone, TONE_CLASS } from "@/lib/admin/tones";
 import { requireAdminPage } from "@/lib/auth/guard";
 import { prisma } from "@/lib/prisma";
+import { formatEndDate, renewedEnd, subscriptionInfo } from "@/lib/subscription";
 import { cn } from "@/lib/utils";
 import { ActivityChart } from "../../_components/ActivityChart";
 import { AttentionList } from "../../_components/AttentionList";
 import { ChipManager } from "../../_components/ChipManager";
 import { QrManager } from "../../_components/QrManager";
 import { ShopForm } from "../../_components/ShopForm";
+import { SubscriptionPanel } from "../../_components/SubscriptionPanel";
 import { ActivityFeed, ChipBars, CoverStats, FunnelBars, GeminiUsage, Pager, Panel, RangeTabs, RatingBars, ReviewList } from "../../_components/TrackingBlocks";
 
 type Search = { range?: string | string[]; tab?: string | string[]; page?: string | string[]; status?: string | string[] };
@@ -43,6 +45,7 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
   if (!shop) notFound();
 
   const base = `/admin/shops/${shop.id}`;
+  const subscription = subscriptionInfo(shop.subscriptionEndsAt);
   const attentionFilter = parseAttentionFilter(search.status);
   const [tracking, attention] = await Promise.all([
     tab === "tracking" ? getShopTracking(shop.id, range, requestedPage) : null,
@@ -61,13 +64,15 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
         </svg>
         <div className="relative">
           <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
-            <span className="rounded-full bg-black/15 px-2.5 py-0.5 font-semibold">{shop.isActive ? "Live" : "Paused"}</span>
+            <span className="rounded-full bg-black/15 px-2.5 py-0.5 font-semibold">{subscription.state === "expired" ? "Expired" : shop.isActive ? "Live" : "Paused"}</span>
             {shop.businessCategory}
           </p>
           <h1 className="mt-3 max-w-[20ch] break-words text-[clamp(2.25rem,5vw,3.75rem)] font-semibold leading-none">{shop.name}</h1>
           <p className="mt-3 text-sm opacity-90">Created {formatWhen(shop.createdAt)}</p>
         </div>
       </header>
+
+      <SubscriptionPanel shopId={shop.id} info={subscription} renewedOn={formatEndDate(renewedEnd(shop.subscriptionEndsAt))} />
 
       <nav aria-label="Business sections" className="flex gap-1 overflow-x-auto rounded-full bg-paper p-1">
         {TABS.map((item) => {

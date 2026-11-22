@@ -4,9 +4,11 @@ import { after } from "next/server";
 import { notFound } from "next/navigation";
 import type { Metadata, Viewport } from "next";
 import { prisma } from "@/lib/prisma";
+import { posterFor } from "@/lib/qr/poster";
 import { toReviewLanguage } from "@/lib/reviews/instant-draft";
 import { recordScan } from "@/lib/reviews/record-scan";
 import { MIN_CHIPS } from "@/lib/reviews/rules";
+import { isSubscribed } from "@/lib/subscription";
 import CustomerReviewClient from "./CustomerReviewClient";
 
 export const viewport: Viewport = { themeColor: "#ffffff" };
@@ -27,6 +29,7 @@ const getReviewQr = cache(async (token: string) => {
           googleReviewUrl: true,
           defaultLanguage: true,
           isActive: true,
+          subscriptionEndsAt: true,
           chips: {
             where: { isActive: true },
             orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -36,7 +39,7 @@ const getReviewQr = cache(async (token: string) => {
       },
     },
   });
-  return qr?.isActive && qr.shop.isActive && qr.shop.chips.length >= MIN_CHIPS ? qr : null;
+  return qr?.isActive && qr.shop.isActive && isSubscribed(qr.shop.subscriptionEndsAt) && qr.shop.chips.length >= MIN_CHIPS ? qr : null;
 });
 
 export async function generateMetadata(props: { params: Promise<{ token: string }> }): Promise<Metadata> {
@@ -70,6 +73,11 @@ export default async function CustomerReviewPage(props: { params: Promise<{ toke
       token={token}
       sessionId={sessionId}
       language={toReviewLanguage(shop.defaultLanguage)}
+      headlines={{
+        en: posterFor(shop.businessCategory, "en", shop.primaryColor).headline,
+        hi: posterFor(shop.businessCategory, "hi", shop.primaryColor).headline,
+        hinglish: posterFor(shop.businessCategory, "hinglish", shop.primaryColor).headline,
+      }}
       shop={{
         name: shop.name,
         businessCategory: shop.businessCategory,

@@ -33,7 +33,7 @@ describe("writeInstantDraft", () => {
   it.each(["hi", "hinglish"] as const)("uses the shop and every chip in %s", (language) => {
     for (const draft of samples(4, language)) {
       expect(draft).toContain("Sunrise Bakery");
-      for (const chip of ["food taste", "service", "AC cooling"]) expect(draft.toLowerCase()).toContain(chip.toLowerCase());
+      for (const chip of language === "hi" ? ["खाने का स्वाद", "सर्विस", "AC cooling"] : ["food taste", "service", "AC cooling"]) expect(draft.toLowerCase()).toContain(chip.toLowerCase());
     }
   });
 

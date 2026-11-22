@@ -11,6 +11,7 @@ import { chipsForShopType } from "@/lib/reviews/catalog";
 import { MAX_ACTIVE_CHIPS, MIN_CHIPS } from "@/lib/reviews/rules";
 import { BusinessTypePicker } from "./BusinessTypePicker";
 import { ConfirmButton } from "./ConfirmButton";
+import { GoogleLinkField, type LinkCheck } from "./GoogleLinkField";
 import { LogoField } from "./LogoField";
 import { adminRequest } from "./request";
 
@@ -42,6 +43,8 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [linkCheck, setLinkCheck] = useState<LinkCheck>("idle");
+  const [savedLink, setSavedLink] = useState(shop?.googleReviewUrl ?? "");
 
   const update = (key: keyof ShopFormValues, value: string) => {
     setSaved(false);
@@ -86,6 +89,12 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
       return;
     }
 
+    if (values.googleReviewUrl.trim() !== savedLink && linkCheck !== "correct") {
+      setError("Tap Test link and confirm it opens the right Google review box.");
+      document.getElementById("google")?.focus();
+      return;
+    }
+
     setIsSaving(true);
     const details = {
       name: values.name,
@@ -106,6 +115,7 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
     }
     if (shop) {
       setSaved(true);
+      setSavedLink(values.googleReviewUrl.trim());
       router.refresh();
     } else {
       const created = (result.data as { shop: { id: string; qrCodes: { id: string }[] } }).shop;
@@ -145,11 +155,20 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
             <Input id="name" required minLength={2} maxLength={80} value={values.name} onChange={(e) => update("name", e.target.value)} />
           </div>
           <LogoField value={values.logoUrl} onChange={(logo) => update("logoUrl", logo)} />
-          <div>
-            <Label htmlFor="google">Google review link</Label>
-            <Input id="google" type="url" required placeholder="https://g.page/r/your-business/review" value={values.googleReviewUrl} onChange={(e) => update("googleReviewUrl", e.target.value)} />
-            <p className="mt-1 text-sm text-moss">Find it in Google Business Profile under “Ask for reviews”.</p>
-          </div>
+          <GoogleLinkField
+            value={values.googleReviewUrl}
+            name={values.name}
+            check={linkCheck}
+            onChange={(url) => {
+              update("googleReviewUrl", url);
+              setLinkCheck("idle");
+              setError(null);
+            }}
+            onCheck={(check) => {
+              setLinkCheck(check);
+              setError(null);
+            }}
+          />
 
           {!shop && (
             <details className="rounded-xl border border-line bg-paper">

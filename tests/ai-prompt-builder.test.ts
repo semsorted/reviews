@@ -98,6 +98,6 @@ describe("safe fallback draft", () => {
 
   it.each(["en", "hi", "hinglish"] as const)("uses every chip in %s", (language) => {
     const { draftText } = router.generateSafeFallbackDraft(input({ language, chips: ["Taste", "Service", "Price"] }));
-    for (const chip of ["taste", "service", "price"]) expect(draftText.toLowerCase()).toContain(chip);
+    for (const chip of language === "hi" ? ["स्वाद", "सर्विस", "कीमत"] : ["taste", "service", "price"]) expect(draftText.toLowerCase()).toContain(chip);
   });
 });

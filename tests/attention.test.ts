@@ -41,7 +41,7 @@ const patch = (payload: unknown, id = itemId) => updateAttention(request(`/api/a
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.qrFind.mockResolvedValue({ id: qrId, isActive: true, shop: { id: shopId, isActive: true } });
+  mocks.qrFind.mockResolvedValue({ id: qrId, isActive: true, shop: { id: shopId, isActive: true, subscriptionEndsAt: new Date("2099-01-01T00:00:00Z") } });
   mocks.sessionFind.mockResolvedValue({ qrCodeId: qrId });
   mocks.feedbackFind.mockResolvedValue(null);
   mocks.feedbackUpsert.mockResolvedValue({ id: itemId });
@@ -85,8 +85,9 @@ describe("private customer feedback", () => {
 
   it.each([
     ["unknown QR", null],
-    ["paused QR", { id: qrId, isActive: false, shop: { id: shopId, isActive: true } }],
-    ["paused shop", { id: qrId, isActive: true, shop: { id: shopId, isActive: false } }],
+    ["paused QR", { id: qrId, isActive: false, shop: { id: shopId, isActive: true, subscriptionEndsAt: new Date("2099-01-01T00:00:00Z") } }],
+    ["paused shop", { id: qrId, isActive: true, shop: { id: shopId, isActive: false, subscriptionEndsAt: new Date("2099-01-01T00:00:00Z") } }],
+    ["expired subscription", { id: qrId, isActive: true, shop: { id: shopId, isActive: true, subscriptionEndsAt: new Date("2020-01-01T00:00:00Z") } }],
   ])("rejects a %s", async (_name, qr) => {
     mocks.qrFind.mockResolvedValue(qr);
     expect((await post(body)).status).toBe(404);

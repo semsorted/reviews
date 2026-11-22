@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { chartDays, dayKeys, formatWhen, parseDraftNotes, rangeStart, reviewStatus, type ReviewStatus, type TrackingRange } from "./tracking-core";
+import { subscriptionInfo } from "@/lib/subscription";
 
 export const REVIEWS_PER_PAGE = 20;
 
@@ -18,6 +19,7 @@ const shopFilter = (shopId?: string) => (shopId ? Prisma.sql`AND shop_id = ${sho
 const AUDIT_LABELS: Record<string, string> = {
   "shop.create": "Shop created",
   "shop.update": "Shop details updated",
+  "shop.subscription_renew": "Subscription renewed",
   "shop.delete": "Shop deleted",
   "qr.create": "QR created",
   "qr.update": "QR updated",
@@ -116,7 +118,7 @@ export async function getOverview(range: TrackingRange) {
   const since = rangeStart(range);
   // ponytail: loads every shop for instant search; add server pagination past a few hundred shops.
   const [shops, funnels, ratings, latest, daily, gemini, activity, openItems] = await Promise.all([
-    prisma.shop.findMany({ orderBy: { createdAt: "desc" }, select: { id: true, name: true, businessCategory: true, isActive: true, createdAt: true, _count: { select: { qrCodes: true } } } }),
+    prisma.shop.findMany({ orderBy: { createdAt: "desc" }, select: { id: true, name: true, businessCategory: true, isActive: true, subscriptionEndsAt: true, createdAt: true, _count: { select: { qrCodes: true } } } }),
     funnelRows(since),
     ratingRows(since),
     prisma.analyticsEvent.groupBy({ by: ["shopId"], _max: { createdAt: true } }),
@@ -144,6 +146,7 @@ export async function getOverview(range: TrackingRange) {
       name: shop.name,
       businessCategory: shop.businessCategory,
       isActive: shop.isActive,
+      subscription: subscriptionInfo(shop.subscriptionEndsAt),
       qrCount: shop._count.qrCodes,
       ...(byShop.get(shop.id) ?? emptyFunnel()),
       rating: ratingSummary(shopRatings).average,

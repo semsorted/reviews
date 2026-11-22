@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { openAttentionCount } from "@/lib/admin/attention";
 import { AuthError, getCurrentUser } from "@/lib/auth/session";
+import { prisma } from "@/lib/prisma";
+import { indiaDayKey, RENEWAL_WARNING_DAYS, subscriptionInfo } from "@/lib/subscription";
 import { AdminShell } from "./_components/AdminShell";
 
 export const metadata: Metadata = {
@@ -31,5 +33,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     );
   }
 
-  return <AdminShell openCount={await openAttentionCount()}>{children}</AdminShell>;
+  const now = new Date();
+  const [openCount, ending] = await Promise.all([
+    openAttentionCount(),
+    prisma.shop.findMany({
+      where: { subscriptionEndsAt: { lte: new Date(now.getTime() + (RENEWAL_WARNING_DAYS + 1) * 86_400_000) } },
+      orderBy: { subscriptionEndsAt: "asc" },
+      select: { id: true, name: true, subscriptionEndsAt: true },
+    }),
+  ]);
+  const renewals = ending
+    .map((shop) => ({ id: shop.id, name: shop.name, subscription: subscriptionInfo(shop.subscriptionEndsAt, now) }))
+    .filter((shop) => shop.subscription.state !== "active");
+
+  return <AdminShell openCount={openCount} renewals={renewals} today={indiaDayKey(now)}>{children}</AdminShell>;
 }

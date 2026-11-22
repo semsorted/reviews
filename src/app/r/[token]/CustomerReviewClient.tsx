@@ -3,15 +3,18 @@
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { Check, RefreshCw, Star } from "lucide-react";
 import type { ReviewLanguage } from "@/lib/ai/provider.interface";
+import { hindiChip } from "@/lib/reviews/chip-hindi";
 import { copyDraft, copyViaCommand } from "@/lib/reviews/copy-draft";
 import { seededRandom, writeInstantDraft } from "@/lib/reviews/instant-draft";
 import { MAX_CHIPS, MIN_CHIPS } from "@/lib/reviews/rules";
 import { cn } from "@/lib/utils";
+import { COPY } from "./copy";
 
 export interface CustomerReviewClientProps {
   token: string;
   sessionId: string;
   language: ReviewLanguage;
+  headlines: Record<ReviewLanguage, string>;
   shop: {
     name: string;
     businessCategory: string;
@@ -27,7 +30,6 @@ const LANGUAGES: { id: ReviewLanguage; label: string }[] = [
   { id: "hi", label: "हिंदी" },
   { id: "hinglish", label: "Hinglish" },
 ];
-const RATING_WORDS = ["", "Poor", "Below average", "Okay", "Good", "Excellent"];
 const actionClass =
   "flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-5 text-base font-medium";
 
@@ -36,7 +38,7 @@ function monogramTextColor(hex: string) {
   return 0.299 * r + 0.587 * g + 0.114 * b > 160 ? "#1f2328" : "#ffffff";
 }
 
-export default function CustomerReviewClient({ token, sessionId, language: defaultLanguage, shop, chips }: CustomerReviewClientProps) {
+export default function CustomerReviewClient({ token, sessionId, language: defaultLanguage, headlines, shop, chips }: CustomerReviewClientProps) {
   const [language, setLanguage] = useState(defaultLanguage);
   const [rating, setRating] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
@@ -54,6 +56,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
   const textRef = useRef<HTMLTextAreaElement>(null);
   const didRevealDraft = useRef(false);
 
+  const copy = COPY[language];
   const hasDraft = draftText.trim().length > 0;
   const isReady = rating > 0 && selected.length >= MIN_CHIPS;
   const atLimit = selected.length >= MAX_CHIPS;
@@ -188,17 +191,17 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
 
   const hint =
     copyState === "manual"
-      ? "Copy the selected text, then paste it on Google."
+      ? copy.hintManual
       : copyState === "copied"
-        ? "Copied. Paste it on Google and tap Post."
+        ? copy.hintCopied
         : hasDraft
-          ? "Google opens next. Paste your review and post it."
+          ? copy.hintReady
           : rating === 0
-            ? "Tap a star to start."
-            : `Pick ${Math.max(MIN_CHIPS - selected.length, 1)} more to write your review.`;
+            ? copy.hintStart
+            : copy.hintMore(Math.max(MIN_CHIPS - selected.length, 1));
 
   return (
-    <div className="review-surface min-h-dvh bg-white text-review-ink">
+    <div lang={language === "hi" ? "hi" : "en"} className="review-surface min-h-dvh bg-white text-review-ink">
       <main className="mx-auto w-full max-w-[28rem] px-5 pb-44 pt-5">
         <header className="flex items-center gap-3">
           {shop.logoUrl ? (
@@ -221,7 +224,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
 
         <fieldset className="mt-5 border-t border-review-line pt-4">
           <legend className="contents">
-            <h2 className="text-center text-sm font-medium text-review-muted">Choose your review language</h2>
+            <h2 className="text-center text-sm font-medium text-review-muted">{copy.chooseLanguage}</h2>
           </legend>
           <div className="mt-2 grid grid-cols-3 gap-2">
             {LANGUAGES.map((option) => {
@@ -245,7 +248,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
 
         <fieldset className="mt-5 border-t border-review-line pt-5 text-center">
           <legend className="contents">
-            <h2 className="text-lg font-medium">How was your visit?</h2>
+            <h2 className="text-lg font-medium">{headlines[language]}</h2>
           </legend>
           <div className="mt-3 flex justify-center">
             {[1, 2, 3, 4, 5].map((value) => (
@@ -260,7 +263,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
                   checked={rating === value}
                   onChange={() => applySelection(value, selected)}
                   className="sr-only"
-                  aria-label={`${value} out of 5, ${RATING_WORDS[value]}`}
+                  aria-label={`${value}/5, ${copy.ratings[value]}`}
                 />
                 <Star
                   aria-hidden
@@ -271,16 +274,16 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
             ))}
           </div>
           <p aria-live="polite" className="mt-1 h-6 text-sm text-review-muted">
-            {RATING_WORDS[rating]}
+            {copy.ratings[rating]}
           </p>
         </fieldset>
 
         <fieldset className="mt-4">
           <legend className="contents">
-            <h2 className="font-medium">{rating > 0 && rating <= 2 ? "What should improve?" : "What stood out?"}</h2>
+            <h2 className="font-medium">{rating > 0 && rating <= 2 ? copy.improve : copy.standOut}</h2>
           </legend>
           <p className="mt-0.5 text-sm text-review-muted" aria-live="polite">
-            {atLimit ? `You picked ${MAX_CHIPS}. Remove one to change it.` : `Pick ${MIN_CHIPS} to ${MAX_CHIPS}`}
+            {atLimit ? copy.picked(MAX_CHIPS) : copy.pick(MIN_CHIPS, MAX_CHIPS)}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {chips.map((chip) => {
@@ -297,7 +300,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
                 >
                   <input type="checkbox" checked={isSelected} disabled={isDisabled} onChange={() => toggleChip(chip.id)} className="sr-only" />
                   {isSelected && <Check aria-hidden className="size-4" strokeWidth={2.5} />}
-                  {chip.label}
+                  {language === "hi" ? hindiChip(chip.label) : chip.label}
                 </label>
               );
             })}
@@ -308,7 +311,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
           <section ref={draftRef} className="mt-6 scroll-mb-44">
             <div className="flex items-center justify-between gap-2">
               <label htmlFor="draft" className="font-medium">
-                Your review
+                {copy.yourReview}
               </label>
               <button
                 type="button"
@@ -317,7 +320,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
                 className="-mr-2 inline-flex min-h-11 items-center gap-1.5 rounded-full px-2 text-sm font-medium text-review-blue disabled:opacity-40"
               >
                 <RefreshCw aria-hidden className="size-4" />
-                {isStale ? "Update" : "Change wording"}
+                {isStale ? copy.update : copy.changeWording}
               </button>
             </div>
             <textarea
@@ -334,7 +337,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
               className="slip-text mt-1 block max-h-72 w-full resize-none rounded-lg border border-review-line bg-white p-3.5 text-base leading-relaxed outline-none focus:border-review-blue focus:ring-1 focus:ring-review-blue"
             />
             <p className="mt-1.5 text-sm text-review-muted">
-              {isStale ? "Your choices changed. Tap Update to match them." : "Edit anything so it sounds like you."}
+              {isStale ? copy.staleHint : copy.editHint}
             </p>
           </section>
         )}
@@ -344,28 +347,28 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
             {privateState === "sent" ? (
               <p role="status" className="flex gap-2 text-[0.9375rem]">
                 <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-review-blue" strokeWidth={2.5} />
-                Sent privately to {shop.name}. You can still post your review on Google.
+                {copy.privateSent}
               </p>
             ) : (
               <form onSubmit={sendPrivateNote}>
-                <h2 id="private-title" className="font-medium">Tell the shop privately</h2>
-                <p className="mt-0.5 text-sm text-review-muted">Only the shop team sees this. It does not replace your Google review.</p>
-                <label htmlFor="private-note" className="sr-only">Your private message</label>
+                <h2 id="private-title" className="font-medium">{copy.privateTitle}</h2>
+                <p className="mt-0.5 text-sm text-review-muted">{copy.privateText}</p>
+                <label htmlFor="private-note" className="sr-only">{copy.privateLabel}</label>
                 <textarea
                   id="private-note"
                   value={privateNote}
                   maxLength={1000}
                   rows={3}
-                  placeholder="What went wrong?"
+                  placeholder={copy.privatePlaceholder}
                   onChange={(event) => {
                     setPrivateNote(event.target.value);
                     if (privateState === "error") setPrivateState("idle");
                   }}
                   className="slip-text mt-2 block max-h-48 w-full resize-none rounded-lg border border-review-line bg-white p-3 text-base leading-relaxed outline-none focus:border-review-blue focus:ring-1 focus:ring-review-blue"
                 />
-                {privateState === "error" && <p role="alert" className="mt-1.5 text-sm text-danger">This did not send. Check your connection and try again.</p>}
+                {privateState === "error" && <p role="alert" className="mt-1.5 text-sm text-danger">{copy.privateError}</p>}
                 <button type="submit" disabled={!privateNote.trim() || privateState === "sending"} className="mt-2 inline-flex min-h-11 items-center rounded-full border border-review-line px-4 text-sm font-medium text-review-blue disabled:opacity-40">
-                  {privateState === "sending" ? "Sending" : "Send privately"}
+                  {privateState === "sending" ? copy.sending : copy.send}
                 </button>
               </form>
             )}
@@ -384,11 +387,11 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
               className={cn(actionClass, "bg-review-blue text-white")}
             >
               {copyState === "copied" && <Check aria-hidden className="size-5" />}
-              {copyState === "copied" ? "Copied. Open Google" : copyState === "manual" ? "Open Google" : "Copy & Next"}
+              {copyState === "copied" ? copy.copiedOpen : copyState === "manual" ? copy.openGoogle : copy.copyNext}
             </a>
           ) : (
             <button type="button" disabled className={cn(actionClass, "bg-review-line/70 text-review-muted")}>
-              Copy &amp; Next
+              {copy.copyNext}
             </button>
           )}
           <p role="status" className="mt-1.5 text-center text-sm text-review-muted">

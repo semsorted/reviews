@@ -6,6 +6,7 @@ import { toReviewLanguage } from "@/lib/reviews/instant-draft";
 import { MAX_CHIPS, MAX_DRAFTS_PER_SESSION, MIN_CHIPS } from "@/lib/reviews/rules";
 import { uuidSchema } from "@/lib/reviews/schema";
 import { firstUnused, localCandidates } from "@/lib/reviews/unique-draft";
+import { isSubscribed } from "@/lib/subscription";
 
 const RecordDraftSchema = z.object({
   token: z.string().min(8).max(64),
@@ -75,6 +76,7 @@ export async function POST(request: NextRequest) {
               businessCategory: true,
               defaultLanguage: true,
               isActive: true,
+              subscriptionEndsAt: true,
               chips: { where: { id: { in: chipIds }, isActive: true }, select: { id: true, label: true } },
             },
           },
@@ -82,7 +84,7 @@ export async function POST(request: NextRequest) {
       }),
       prisma.reviewSession.findUnique({ where: { id: sessionId }, select: { qrCodeId: true } }),
     ]);
-    if (!qr?.isActive || !qr.shop.isActive) {
+    if (!qr?.isActive || !qr.shop.isActive || !isSubscribed(qr.shop.subscriptionEndsAt)) {
       return NextResponse.json({ error: "This review link is no longer active." }, { status: 404 });
     }
     if (session?.qrCodeId !== qr.id) {

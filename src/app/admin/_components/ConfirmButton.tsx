@@ -8,9 +8,10 @@ interface ConfirmButtonProps extends Omit<ButtonProps, "onClick" | "title"> {
   message: string;
   confirmLabel: string;
   onConfirm: () => Promise<void>;
+  confirmVariant?: ButtonProps["variant"];
 }
 
-export function ConfirmButton({ title, message, confirmLabel, onConfirm, children, ...props }: ConfirmButtonProps) {
+export function ConfirmButton({ title, message, confirmLabel, onConfirm, confirmVariant = "destructive", children, ...props }: ConfirmButtonProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isBusy, setIsBusy] = useState(false);
 
@@ -36,7 +37,7 @@ export function ConfirmButton({ title, message, confirmLabel, onConfirm, childre
           <Button type="button" variant="ghost" onClick={() => dialogRef.current?.close()} disabled={isBusy}>
             Cancel
           </Button>
-          <Button type="button" variant="destructive" onClick={confirm} isLoading={isBusy}>
+          <Button type="button" variant={confirmVariant} onClick={confirm} isLoading={isBusy}>
             {confirmLabel}
           </Button>
         </div>

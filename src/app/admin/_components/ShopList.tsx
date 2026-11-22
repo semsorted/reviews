@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChartNoAxesCombined, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { shopTone, TONE_CLASS } from "@/lib/admin/tones";
+import type { SubscriptionInfo } from "@/lib/subscription";
 import { cn } from "@/lib/utils";
 
 export interface ShopRow {
@@ -12,6 +13,7 @@ export interface ShopRow {
   name: string;
   businessCategory: string;
   isActive: boolean;
+  subscription: SubscriptionInfo;
   qrCount: number;
   scans: number;
   drafts: number;
@@ -60,7 +62,7 @@ export function ShopList({ shops, range }: { shops: ShopRow[]; range: string }) 
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate font-semibold">{shop.name}</span>
-                  <span className="block truncate text-sm text-moss">{shop.isActive ? "Live" : "Paused"}, {shop.lastActivity ? `last activity ${shop.lastActivity}` : "no activity yet"}</span>
+                  <span className="block truncate text-sm text-moss">{shop.subscription.state === "expired" ? "Expired" : shop.isActive ? "Live" : "Paused"}, {shop.lastActivity ? `last activity ${shop.lastActivity}` : "no activity yet"}</span>
                 </span>
               </span>
               <span className="hidden text-right tabular-nums lg:block">{shop.scans}</span>

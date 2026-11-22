@@ -20,7 +20,7 @@ const mukta = Mukta({
 
 const outfit = Outfit({
   subsets: ["latin"],
-  weight: "500",
+  weight: "600",
   variable: "--font-outfit",
   display: "swap",
 });

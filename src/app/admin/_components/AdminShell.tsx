@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { BellRing, ChartNoAxesCombined, LayoutDashboard, LogOut, Plus, Store } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
+import { RenewalPopup, type RenewalItem } from "./RenewalPopup";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", short: "Home", icon: LayoutDashboard, tint: "bg-g-blue text-white" },
@@ -23,12 +24,13 @@ function SignOut({ className }: { className?: string }) {
   );
 }
 
-export function AdminShell({ openCount, children }: { openCount: number; children: React.ReactNode }) {
+export function AdminShell({ openCount, renewals, today, children }: { openCount: number; renewals: RenewalItem[]; today: string; children: React.ReactNode }) {
   const pathname = usePathname();
   const isCurrent = (href: string) => (href === "/admin" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`));
 
   return (
     <div className="min-h-dvh bg-mist">
+      <RenewalPopup items={renewals} today={today} />
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-night p-4 text-white lg:flex">
         <Link href="/admin" aria-label="Semsorted dashboard" className="rounded-xl bg-white px-3 py-2.5">
           <Logo />
@@ -50,6 +52,9 @@ export function AdminShell({ openCount, children }: { openCount: number; childre
                 <span className="flex-1">{item.label}</span>
                 {item.href === "/admin/attention" && openCount > 0 && (
                   <span aria-label={`${openCount} open`} className="min-w-6 rounded-full bg-g-red px-1.5 py-0.5 text-center text-xs font-bold tabular-nums text-white">{openCount}</span>
+                )}
+                {item.href === "/admin/shops" && renewals.length > 0 && (
+                  <span aria-label={`${renewals.length} need renewal`} className="min-w-6 rounded-full bg-g-yellow px-1.5 py-0.5 text-center text-xs font-bold tabular-nums text-ink">{renewals.length}</span>
                 )}
               </Link>
             );
@@ -85,6 +90,9 @@ export function AdminShell({ openCount, children }: { openCount: number; childre
               {item.short}
               {item.href === "/admin/attention" && openCount > 0 && (
                 <span aria-label={`${openCount} open`} className="absolute right-[calc(50%-1.5rem)] top-1.5 min-w-5 rounded-full bg-g-red px-1 text-center text-[0.68rem] font-bold leading-5 text-white">{openCount}</span>
+              )}
+              {item.href === "/admin/shops" && renewals.length > 0 && (
+                <span aria-label={`${renewals.length} need renewal`} className="absolute right-[calc(50%-1.5rem)] top-1.5 min-w-5 rounded-full bg-g-yellow px-1 text-center text-[0.68rem] font-bold leading-5 text-ink">{renewals.length}</span>
               )}
             </Link>
           );
