@@ -9,6 +9,7 @@ const AnalyticsEventSchema = z.object({
   sessionId: uuidSchema,
   eventType: z.enum(["copy_click", "regenerate_click", "google_review_click"]),
   draftId: uuidSchema.optional(),
+  edited: z.boolean().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid event" }, { status: 400 });
   }
-  const { token, sessionId, eventType, draftId } = parsed.data;
+  const { token, sessionId, eventType, draftId, edited } = parsed.data;
 
   try {
     const qr = await prisma.qrCode.findUnique({
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
         qrCodeId: qr.id,
         sessionId,
         eventType,
-        metadata: draftId ? { draftId } : {},
+        metadata: { ...(draftId ? { draftId } : {}), ...(eventType === "copy_click" && edited ? { edited: true } : {}) },
       },
     });
 

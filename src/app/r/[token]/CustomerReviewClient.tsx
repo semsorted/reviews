@@ -96,7 +96,7 @@ export default function CustomerReviewClient({ token, sessionId, language, shop,
           method: "POST",
           headers: { "Content-Type": "application/json" },
           keepalive: true,
-          body: JSON.stringify({ token, sessionId, eventType, draftId: draftId ?? undefined }),
+          body: JSON.stringify({ token, sessionId, eventType, draftId: draftId ?? undefined, edited: eventType === "copy_click" && isEdited ? true : undefined }),
         })
       )
       .catch(() => {});

@@ -312,6 +312,13 @@ describe("POST /api/analytics/event", () => {
     });
   });
 
+  it("records that a customer edited the review, without storing their words", async () => {
+    await track(post("/api/analytics/event", { ...event, edited: true }));
+    expect(mocks.eventCreate).toHaveBeenCalledWith({
+      data: { shopId, qrCodeId: qrId, sessionId, eventType: "copy_click", metadata: { draftId, edited: true } },
+    });
+  });
+
   it.each([
     ["paused QR", { ...activeQr, isActive: false }],
     ["paused shop", { ...activeQr, shop: { ...activeQr.shop, isActive: false } }],
