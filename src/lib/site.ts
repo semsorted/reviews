@@ -6,10 +6,12 @@ export const SITE_TITLE = "Semsorted: Get More Honest Google Reviews with a QR C
 export const SITE_DESCRIPTION =
   "Semsorted helps local shops in India collect honest Google reviews. Customers scan a QR code, choose a rating, edit a ready draft, and post it on Google.";
 
-const WHATSAPP_MESSAGE = "Hi Semsorted, mujhe apni shop ke liye review QR chahiye.";
+export const WHATSAPP_MESSAGE = "Hi Semsorted, mujhe apni shop ke liye review QR chahiye.";
+
+export const whatsappLink = (message: string) => `https://wa.me/919001892417?text=${encodeURIComponent(message)}`;
 
 export const CONTACT = {
-  whatsappHref: `https://wa.me/919001892417?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`,
+  whatsappHref: whatsappLink(WHATSAPP_MESSAGE),
 };
 
 /** New pages must not reuse a retired path, because those return 410 and are removed from Google. */

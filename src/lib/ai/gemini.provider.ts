@@ -39,10 +39,15 @@ export class GeminiProvider implements AIProvider {
     const { systemPrompt, userPrompt } = buildReviewPrompts(input);
     const model = process.env.GEMINI_MODEL || this.defaultModel;
 
-    // Timeout via Promise.race
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Gemini API request timed out after 15 seconds")), 15000)
-    );
+    const timeoutMs = input.timeoutMs ?? 15000;
+    const abort = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        abort.abort();
+        reject(new Error(`Gemini API request timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    });
 
     const generatePromise = (async () => {
       const response = await this.client!.models.generateContent({
@@ -54,6 +59,7 @@ export class GeminiProvider implements AIProvider {
           },
         ],
         config: {
+          abortSignal: abort.signal,
           responseMimeType: "application/json",
           temperature: input.temperature ?? 0.7,
           maxOutputTokens: input.maxTokens ?? 350,
@@ -98,6 +104,11 @@ export class GeminiProvider implements AIProvider {
       };
     })();
 
-    return await Promise.race([generatePromise, timeoutPromise]);
+    generatePromise.catch(() => {});
+    try {
+      return await Promise.race([generatePromise, timeoutPromise]);
+    } finally {
+      clearTimeout(timer);
+    }
   }
 }

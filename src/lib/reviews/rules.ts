@@ -2,6 +2,9 @@ export const MIN_CHIPS = 2;
 export const MAX_CHIPS = 4;
 export const MAX_ACTIVE_CHIPS = 12;
 export const MAX_DRAFTS_PER_SESSION = 5;
+export const MAX_AI_DRAFTS_PER_SESSION = 2;
+export const MAX_AI_DRAFTS_PER_SHOP_PER_DAY = 100;
+export const AI_DRAFT_TIMEOUT_MS = 4000;
 // ponytail: per-QR cap bounds scan-record abuse; add per-IP edge limits if one QR is targeted.
 export const MAX_SCANS_PER_QR_PER_HOUR = 300;
 

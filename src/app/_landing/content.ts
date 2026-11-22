@@ -1,15 +1,6 @@
 const COMMONS = "https://thumb.wikimedia.org/wikipedia/commons/thumb";
 
 export const PHOTOS = {
-  chai: {
-    src: `${COMMONS}/6/6b/Kerala-style_Glass_of_Chai_%28Tea%29.jpg/1280px-Kerala-style_Glass_of_Chai_%28Tea%29.jpg`,
-    alt: "A frothy glass of hot chai on a wooden table",
-    title: "Kerala-style Glass of Chai",
-    author: "Navaneethpp",
-    license: "CC BY 4.0",
-    licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
-    source: "https://commons.wikimedia.org/wiki/File:Kerala-style_Glass_of_Chai_(Tea).jpg",
-  },
   sweets: {
     src: `${COMMONS}/0/04/Burfi_and_Peda%2C_Indian_Sweets_Mithai_Chennai_India.jpg/1280px-Burfi_and_Peda%2C_Indian_Sweets_Mithai_Chennai_India.jpg`,
     alt: "Trays of burfi and peda in an Indian sweet shop",
@@ -31,10 +22,46 @@ export const LANGUAGES: { code: StoryLanguage; label: string }[] = [
   { code: "en", label: "English" },
 ];
 
-export const STORY_UI: Record<StoryLanguage, { note: string; read: string; chapter: string }> = {
-  hinglish: { note: "Yeh kaalpanik kahani hai, kisi real customer ka result nahi.", read: "Poori kahani padho", chapter: "Kahani" },
-  hi: { note: "यह एक काल्पनिक कहानी है, किसी असली ग्राहक का नतीजा नहीं।", read: "पूरी कहानी पढ़ें", chapter: "कहानी" },
-  en: { note: "This is a fictional story, not a real customer result.", read: "Read the full story", chapter: "Story" },
+export const STORY_UI: Record<StoryLanguage, { note: string; read: string; chapter: string; page: string; whole: string; next: string; all: string; skip: string }> = {
+  hinglish: { note: "Yeh kaalpanik kahani hai, kisi real customer ka result nahi.", read: "Poori kahani padho", chapter: "Kahani", page: "Panna", whole: "Poori kahani ek saath padho", next: "Agli kahani", all: "Sab kahaniyan", skip: "Skip karke poori kahani padho" },
+  hi: { note: "यह एक काल्पनिक कहानी है, किसी असली ग्राहक का नतीजा नहीं।", read: "पूरी कहानी पढ़ें", chapter: "कहानी", page: "पन्ना", whole: "पूरी कहानी एक साथ पढ़ें", next: "अगली कहानी", all: "सब कहानियाँ", skip: "स्किप करके पूरी कहानी पढ़ें" },
+  en: { note: "This is a fictional story, not a real customer result.", read: "Read the full story", chapter: "Story", page: "Page", whole: "Read the whole story at once", next: "Next story", all: "All stories", skip: "Skip to the full story" },
+};
+
+export const TONES: Record<Story["tone"], string> = {
+  blue: "bg-g-blue text-white",
+  red: "bg-g-red text-white",
+  green: "bg-g-green text-white",
+  yellow: "bg-g-yellow text-ink",
+  night: "bg-[#174ea6] text-white",
+};
+
+export const CHAPTERS: Record<string, Record<StoryLanguage, string[]>> = {
+  "ramesh-kaka-ki-chai": {
+    hinglish: ["Bazaar ka kona", "Chai near me", "Bina likhi tareef", "Counter ka QR", "Adrak zyada ya kam?"],
+    hi: ["बाज़ार का कोना", "पास में चाय", "अनलिखी तारीफ़", "काउंटर का QR", "अदरक ज़्यादा या कम?"],
+    en: ["The market corner", "Chai near me", "Praise nobody wrote", "The QR on the counter", "More ginger or less?"],
+  },
+  "sunita-ji-ka-parlour": {
+    hinglish: ["Gali ke andar", "3 stars ka sach", "Ek register", "Thandi hone se pehle"],
+    hi: ["गली के अंदर", "3 स्टार का सच", "एक रजिस्टर", "ठंडी होने से पहले"],
+    en: ["Deep in the lane", "The truth in 3 stars", "One register", "Before the chai went cold"],
+  },
+  "imran-bhai-ka-garage": {
+    hinglish: ["Saaf niyat", "Ek dheeli wire", "Apne words me", "Sach me kya kharab hai?"],
+    hi: ["साफ़ नीयत", "एक ढीली तार", "अपने शब्दों में", "सच में क्या ख़राब है?"],
+    en: ["Clean intentions", "One loose wire", "In her own words", "What's really wrong?"],
+  },
+  "meena-aunty-ki-mithai": {
+    hinglish: ["30 saal ka swaad", "Patli gali", "Do-teen taps", "Pehle muh meetha"],
+    hi: ["तीस साल का स्वाद", "पतली गली", "दो-तीन टैप", "पहले मुँह मीठा"],
+    en: ["Thirty years of taste", "The narrow lane", "A few taps", "Sweeten your mouth first"],
+  },
+  "dr-kavya-ka-clinic": {
+    hinglish: ["Injection se pehle kahani", "Bina board ka clinic", "Reception ka QR", "Aaj kaunsi kahani?"],
+    hi: ["इंजेक्शन से पहले कहानी", "बिना बोर्ड का क्लिनिक", "रिसेप्शन का QR", "आज कौन-सी कहानी?"],
+    en: ["A story before the injection", "A clinic with no sign", "The QR at reception", "Which story today?"],
+  },
 };
 
 export const STORIES: Story[] = [

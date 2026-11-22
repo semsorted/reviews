@@ -15,7 +15,6 @@ export function SiteFooter() {
           {NAV_LINKS.map((link) => (
             <Link key={link.href} href={link.href} className="inline-flex min-h-11 items-center font-medium hover:text-ink">{link.label}</Link>
           ))}
-          <Link href="/login" className="inline-flex min-h-11 items-center font-medium hover:text-ink">Admin sign in</Link>
         </nav>
       </div>
       <p className="mt-4 max-w-[70ch]">Semsorted is an independent service and is not affiliated with or endorsed by Google. Google is a trademark of Google LLC.</p>

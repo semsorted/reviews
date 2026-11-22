@@ -7,11 +7,27 @@ const mocks = vi.hoisted(() => ({
   draftCount: vi.fn(),
   draftCreate: vi.fn(),
   draftUpdate: vi.fn(),
+  draftFindMany: vi.fn(),
+  draftFindFirst: vi.fn(),
+  draftUpdateOne: vi.fn(),
+  aiCount: vi.fn(),
+  aiWrite: vi.fn(),
+  aiConfigured: vi.fn(),
+  usage: vi.fn(),
   eventCreate: vi.fn(),
   eventCount: vi.fn(),
   lock: vi.fn(),
   afterWork: [] as Promise<unknown>[],
 }));
+
+vi.mock("@/lib/ai/gemini.provider", () => ({
+  GeminiProvider: class {
+    isConfigured = mocks.aiConfigured;
+    generateReviewDraft = mocks.aiWrite;
+    getDefaultModel = () => "test-model";
+  },
+}));
+vi.mock("@/lib/ai/usage-tracker", () => ({ trackAiUsage: mocks.usage }));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -19,8 +35,18 @@ vi.mock("@/lib/prisma", () => ({
     reviewSession: { findUnique: mocks.sessionFind },
     reviewDraft: { updateMany: mocks.draftUpdate },
     analyticsEvent: { create: mocks.eventCreate, count: mocks.eventCount },
+    aiUsageLog: { count: mocks.aiCount },
     $transaction: (work: (tx: unknown) => unknown) =>
-      work({ $executeRaw: mocks.lock, reviewDraft: { count: mocks.draftCount, create: mocks.draftCreate } }),
+      work({
+        $executeRaw: mocks.lock,
+        reviewDraft: {
+          count: mocks.draftCount,
+          create: mocks.draftCreate,
+          findMany: mocks.draftFindMany,
+          findFirst: mocks.draftFindFirst,
+          update: mocks.draftUpdateOne,
+        },
+      }),
   },
 }));
 vi.mock("next/server", async (original) => ({
@@ -32,6 +58,10 @@ vi.mock("next/server", async (original) => ({
 
 import { POST as record } from "@/app/api/review/generate/route";
 import { POST as track } from "@/app/api/analytics/event/route";
+import { MAX_AI_DRAFTS_PER_SESSION, MAX_AI_DRAFTS_PER_SHOP_PER_DAY } from "@/lib/reviews/rules";
+import { localCandidates } from "@/lib/reviews/unique-draft";
+
+const aiText = "Sunset Cafe me service aur taste dono ka experience kaafi achha laga mujhe.";
 
 const shopId = "11111111-1111-4111-8111-111111111111";
 const qrId = "33333333-3333-4333-8333-333333333333";
@@ -72,16 +102,119 @@ beforeEach(() => {
   mocks.eventCount.mockResolvedValue(0);
   mocks.draftUpdate.mockResolvedValue({ count: 1 });
   mocks.lock.mockResolvedValue(0);
+  mocks.draftFindMany.mockResolvedValue([]);
+  mocks.draftFindFirst.mockResolvedValue(null);
+  mocks.draftUpdateOne.mockResolvedValue({ id: draftId });
+  mocks.aiCount.mockResolvedValue(0);
+  mocks.aiConfigured.mockReturnValue(true);
+  mocks.aiWrite.mockResolvedValue({ draftText: aiText, model: "test-model", inputTokens: 10, outputTokens: 20, latencyMs: 300 });
+  mocks.usage.mockResolvedValue(undefined);
 });
 
 describe("POST /api/review/generate", () => {
-  it("records a draft from the server's shop data", async () => {
+  const seen = localCandidates({ shopName: "Sunset Cafe", rating: 4, chips: ["Service", "Taste"], language: "hinglish" }, sessionId, 0);
+  const allUsed = () => mocks.draftFindMany.mockImplementation(async ({ where }) => where.generatedText.in.map((generatedText: string) => ({ generatedText })));
+
+  it("keeps the draft the customer sees when this shop has not used it", async () => {
     const response = await record(post("/api/review/generate", body));
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ draftId });
+    await expect(response.json()).resolves.toEqual({ draftId, text: seen[0], source: "instant" });
     const { data } = mocks.draftCreate.mock.calls[0][0];
-    expect(data).toMatchObject({ sessionId, shopId, customerNotes: "Rating 4: Service, Taste", language: "hinglish", provider: "instant" });
-    expect(data.generatedText).toContain("Sunset Cafe");
+    expect(data).toMatchObject({ sessionId, shopId, customerNotes: "Rating 4: Service, Taste", language: "hinglish", provider: "instant", generatedText: seen[0] });
+    expect(mocks.aiWrite).not.toHaveBeenCalled();
+  });
+
+  it("checks other customers' reviews from this shop under a shop lock", async () => {
+    await record(post("/api/review/generate", body));
+    expect(mocks.lock).toHaveBeenCalledTimes(1);
+    expect(mocks.draftFindMany.mock.calls[0][0].where).toMatchObject({ shopId, sessionId: { not: sessionId } });
+  });
+
+  it("swaps to another local review when the first was used, without Gemini", async () => {
+    mocks.draftFindMany.mockResolvedValue([{ generatedText: seen[0] }]);
+    const data = await (await record(post("/api/review/generate", body))).json();
+    expect(data).toMatchObject({ text: seen[1], source: "instant" });
+    expect(mocks.aiWrite).not.toHaveBeenCalled();
+  });
+
+  it("updates this customer's open draft instead of adding another", async () => {
+    mocks.draftFindFirst.mockResolvedValue({ id: draftId });
+    await record(post("/api/review/generate", body));
+    expect(mocks.draftUpdateOne).toHaveBeenCalledWith(expect.objectContaining({ where: { id: draftId } }));
+    expect(mocks.draftCreate).not.toHaveBeenCalled();
+  });
+
+  it("uses Gemini only when every local review is already used", async () => {
+    allUsed();
+    mocks.draftFindMany.mockImplementationOnce(async ({ where }) => where.generatedText.in.map((generatedText: string) => ({ generatedText })));
+    mocks.draftFindMany.mockImplementationOnce(async () => []);
+    const data = await (await record(post("/api/review/generate", body))).json();
+    expect(mocks.aiWrite).toHaveBeenCalledTimes(1);
+    expect(data).toMatchObject({ text: aiText, source: "gemini" });
+    expect(mocks.draftCreate.mock.calls[0][0].data).toMatchObject({ provider: "gemini", generatedText: aiText });
+    expect(mocks.lock).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the customer moving when Gemini fails", async () => {
+    allUsed();
+    mocks.aiWrite.mockRejectedValue(new Error("429 RESOURCE_EXHAUSTED"));
+    const response = await record(post("/api/review/generate", body));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ text: seen[0], source: "repeat" });
+    expect(mocks.usage).toHaveBeenCalledWith(expect.objectContaining({ status: "FAILED" }));
+  });
+
+  it("retries once after a temporary Gemini error", async () => {
+    mocks.draftFindMany.mockImplementationOnce(async ({ where }) => where.generatedText.in.map((generatedText: string) => ({ generatedText })));
+    mocks.aiWrite.mockRejectedValueOnce(new Error('{"error":{"code":503,"message":"high demand"}}'));
+    await expect((await record(post("/api/review/generate", body))).json()).resolves.toMatchObject({ text: aiText, source: "gemini" });
+    expect(mocks.aiWrite).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry when the free quota is finished", async () => {
+    allUsed();
+    mocks.aiWrite.mockRejectedValue(new Error('{"error":{"code":429,"status":"RESOURCE_EXHAUSTED"}}'));
+    await expect((await record(post("/api/review/generate", body))).json()).resolves.toMatchObject({ source: "repeat" });
+    expect(mocks.aiWrite).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call Gemini when the key is missing", async () => {
+    allUsed();
+    mocks.aiConfigured.mockReturnValue(false);
+    await expect((await record(post("/api/review/generate", body))).json()).resolves.toMatchObject({ source: "repeat" });
+    expect(mocks.aiWrite).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["session", MAX_AI_DRAFTS_PER_SESSION, 0],
+    ["shop", 0, MAX_AI_DRAFTS_PER_SHOP_PER_DAY],
+  ])("stops free quota abuse at the %s limit", async (_name, sessionCalls, shopCalls) => {
+    allUsed();
+    mocks.aiCount.mockResolvedValueOnce(sessionCalls).mockResolvedValueOnce(shopCalls);
+    await expect((await record(post("/api/review/generate", body))).json()).resolves.toMatchObject({ source: "repeat" });
+    expect(mocks.aiWrite).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unsafe Gemini draft after one retry", async () => {
+    allUsed();
+    mocks.aiWrite.mockResolvedValue({ draftText: "Written by AI for this shop, visit https://example.com today.", model: "m", inputTokens: 1, outputTokens: 1, latencyMs: 1 });
+    await expect((await record(post("/api/review/generate", body))).json()).resolves.toMatchObject({ source: "repeat" });
+    expect(mocks.aiWrite).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries once when Gemini invents a detail", async () => {
+    mocks.draftFindMany.mockImplementationOnce(async ({ where }) => where.generatedText.in.map((generatedText: string) => ({ generatedText })));
+    mocks.aiWrite.mockResolvedValueOnce({ draftText: "Maine Sunset Cafe se kuch liya tha aur taste theek tha.", model: "m", inputTokens: 1, outputTokens: 1, latencyMs: 1 });
+    await expect((await record(post("/api/review/generate", body))).json()).resolves.toMatchObject({ text: aiText, source: "gemini" });
+    expect(mocks.aiWrite).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry past the session's Gemini limit", async () => {
+    allUsed();
+    mocks.aiCount.mockResolvedValueOnce(MAX_AI_DRAFTS_PER_SESSION - 1).mockResolvedValueOnce(0);
+    mocks.aiWrite.mockResolvedValue({ draftText: "Written by AI for this shop, visit https://example.com today.", model: "m", inputTokens: 1, outputTokens: 1, latencyMs: 1 });
+    await record(post("/api/review/generate", body));
+    expect(mocks.aiWrite).toHaveBeenCalledTimes(1);
   });
 
   it("records analytics after the response", async () => {

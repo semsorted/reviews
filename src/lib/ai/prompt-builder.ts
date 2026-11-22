@@ -39,6 +39,8 @@ Rules:
 4. Avoid marketing language, superlatives, hashtags, and emojis.
 5. Do not mention AI, a QR code, or being asked to leave a review.
 6. Do not mention future plans, recommendations, or whether the customer will return.
+7. Write the business name exactly as given, once, in its original spelling and script. Never translate or transliterate it.
+8. Do not add qualities such as friendly, welcoming, fresh, clean, or tasty unless that word is in a selected topic. Do not say the customer bought, took, ate, tried, ordered, or used anything, in any language. Write only about the selected topics.
 
 Return only a JSON object: {"draftText":"the review","headline":"a 3-6 word summary"}`;
 

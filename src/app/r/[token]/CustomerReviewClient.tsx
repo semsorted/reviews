@@ -40,6 +40,8 @@ export default function CustomerReviewClient({ token, sessionId, language, shop,
   const [isStale, setIsStale] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "manual">("idle");
   const recordRef = useRef<Promise<string | null> | null>(null);
+  const syncRef = useRef(0);
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const draftRef = useRef<HTMLElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const didRevealDraft = useRef(false);
@@ -65,17 +67,26 @@ export default function CustomerReviewClient({ token, sessionId, language, shop,
       seededRandom(`${sessionId}:${nextVariant}`)
     );
 
-  // Stats run in the background and can never delay or block the customer.
-  const recordDraft = (nextRating: number, nextSelected: string[]) => {
-    recordRef.current ??= fetch("/api/review/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      keepalive: true,
-      body: JSON.stringify({ token, sessionId, rating: nextRating, chipIds: nextSelected }),
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => data?.draftId ?? null)
-      .catch(() => null);
+  // The draft is already on screen. This background check only swaps it if this shop has used it before.
+  const recordDraft = (nextRating: number, nextSelected: string[], nextVariant: number, shownText: string) => {
+    if (syncTimer.current) clearTimeout(syncTimer.current);
+    const syncId = ++syncRef.current;
+    syncTimer.current = setTimeout(() => {
+      recordRef.current = fetch("/api/review/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({ token, sessionId, rating: nextRating, variant: nextVariant, chipIds: nextSelected }),
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (syncId === syncRef.current && data?.text) {
+            setDraftText((current) => (current === shownText ? data.text : current));
+          }
+          return data?.draftId ?? null;
+        })
+        .catch(() => null);
+    }, 120);
   };
 
   const track = (eventType: "copy_click" | "regenerate_click" | "google_review_click") => {
@@ -100,8 +111,9 @@ export default function CustomerReviewClient({ token, sessionId, language, shop,
       return;
     }
     const ready = nextRating > 0 && nextSelected.length >= MIN_CHIPS;
-    setDraftText(ready ? writeDraft(nextRating, nextSelected, variant) : "");
-    if (ready) recordDraft(nextRating, nextSelected);
+    const nextText = ready ? writeDraft(nextRating, nextSelected, variant) : "";
+    setDraftText(nextText);
+    if (ready) recordDraft(nextRating, nextSelected, variant, nextText);
   };
 
   const toggleChip = (id: string) => {
@@ -113,11 +125,12 @@ export default function CustomerReviewClient({ token, sessionId, language, shop,
     if (!isReady) return;
     const nextVariant = variant + 1;
     setVariant(nextVariant);
-    setDraftText(writeDraft(rating, selected, nextVariant));
+    const nextText = writeDraft(rating, selected, nextVariant);
+    setDraftText(nextText);
     setIsEdited(false);
     setIsStale(false);
     setCopyState("idle");
-    recordDraft(rating, selected);
+    recordDraft(rating, selected, nextVariant, nextText);
     track("regenerate_click");
   };
 
@@ -128,6 +141,7 @@ export default function CustomerReviewClient({ token, sessionId, language, shop,
 
   // Copying must start inside the link click, before the browser leaves this page.
   const copyAndContinue = (event: MouseEvent<HTMLAnchorElement>) => {
+    syncRef.current++; // Never change the text after the customer has copied it.
     if (copyViaCommand(draftText)) {
       setCopyState("copied");
       track("copy_click");

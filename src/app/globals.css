@@ -89,6 +89,13 @@ h3 {
   perspective: 4200px;
 }
 
+/* A turning page must never cover the language, page, or skip buttons. */
+.book-stage > :first-child,
+.book-controls {
+  position: relative;
+  z-index: 1;
+}
+
 .book-left,
 .book-back {
   display: none;
@@ -199,51 +206,15 @@ h3 {
   }
 }
 
-/* Motion-sensitive visitors get a plain list unless they turn the page flip on. */
-@media (prefers-reduced-motion: reduce) {
-  .book-scroll:not([data-flip="on"]) {
-    height: auto;
-  }
+.book-para {
+  font-size: clamp(1.3rem, 2vw, 1.8rem);
+  line-height: 1.5;
+}
 
-  .book-scroll:not([data-flip="on"]) .book-stage {
-    position: static;
-    height: auto;
-    padding-block: 3rem;
-  }
-
-  .book-scroll:not([data-flip="on"]) .book {
-    display: grid;
-    gap: 1rem;
-    overflow: visible;
-    perspective: none;
-  }
-
-  .book-scroll:not([data-flip="on"]) :is(.book-left, .book-back, .book-shade, .book-controls) {
-    display: none;
-  }
-
-  .book-scroll:not([data-flip="on"]) .book-leaf {
-    position: relative;
-    inset: auto;
-    z-index: auto !important;
-    transform: none;
-  }
-
-  .book-scroll:not([data-flip="on"]) .book-face {
-    position: relative;
-    border-radius: 1.25rem;
-  }
-
-  .book-scroll:not([data-flip="on"]) .book-band {
-    display: block;
-  }
-
-  .book-scroll:not([data-flip="on"]) .book-teaser {
-    display: none;
-  }
-
-  .book-scroll:not([data-flip="on"]) .book-full {
-    display: block;
+@media (max-height: 44rem) {
+  .book-para {
+    font-size: 1.08rem;
+    line-height: 1.45;
   }
 }
 

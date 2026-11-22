@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
-import { STORIES } from "@/app/_landing/content";
+import { readFileSync } from "node:fs";
+import { CHAPTERS, STORIES } from "@/app/_landing/content";
+import { estimateReviews } from "@/app/_landing/estimate";
 import { activePage, leafTurn } from "@/app/_landing/flip";
 import { isRetiredPath, NAV_LINKS, SITE_URL } from "@/lib/site";
 
@@ -51,7 +53,23 @@ describe("stories", () => {
         expect(text.title && text.trade && text.teaser).toBeTruthy();
         expect(text.paragraphs.length).toBeGreaterThanOrEqual(4);
       }
+      for (const language of ["hinglish", "hi", "en"] as const) {
+        expect(CHAPTERS[story.slug][language]).toHaveLength(story.text[language].paragraphs.length);
+      }
     }
+  });
+});
+
+describe("review estimate", () => {
+  it("uses 26 working days and rounds to whole reviews", () => {
+    expect(estimateReviews(40, 3, 1)).toBe(31);
+    expect(estimateReviews(40, 3, 12)).toBe(374);
+  });
+});
+
+describe("public footer", () => {
+  it("does not link to admin sign in", () => {
+    expect(readFileSync("src/app/_landing/SiteFooter.tsx", "utf8")).not.toMatch(/\/login|Admin sign in/);
   });
 });
 

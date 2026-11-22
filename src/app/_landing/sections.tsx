@@ -37,20 +37,12 @@ const PROMISES = [
   "Hum fake reviews nahi likhte aur reviews ke badle reward nahi dete.",
 ];
 
-export const FAQS = [
+const FAQS = [
   { q: "Kya customer ko app download karna padega?", a: "Nahi. Phone camera se QR scan karte hi review page khul jata hai." },
   { q: "Agar customer khush nahi hai to?", a: "Usse bhi same page aur same Google button milta hai. Low rating ka draft tareef nahi karta." },
   { q: "Review kaun post karta hai?", a: "Customer khud apne Google account se post karta hai. Semsorted Google par kuch post nahi karta." },
   { q: "Kaunsi languages milti hain?", a: "English, Hindi aur Hinglish. Shop ke hisaab se language set hoti hai." },
   { q: "Kya Semsorted Google ka part hai?", a: "Nahi. Semsorted ek independent service hai aur Google se affiliated nahi hai." },
-];
-
-export const MORE_FAQS = [
-  { q: "QR kaun banata hai?", a: "Semsorted admin panel se aapki shop ke liye QR banata hai. Website se koi bhi QR nahi bana sakta." },
-  { q: "Kya chips meri shop ke hisaab se honge?", a: "Haan. Shop type ke hisaab se chips ready aate hain, aur unhe aapki shop ke liye badla ja sakta hai." },
-  { q: "QR kahan lagana chahiye?", a: "Counter, bill desk ya table par, jahan customer aaram se phone nikalkar scan kar sake." },
-  { q: "Kya reviews ki guarantee hai?", a: "Nahi. Review dena customer ki apni marzi hai. Hum bas uska raasta aasan karte hain." },
-  { q: "Kya Semsorted kisi review ko hide kar sakta hai?", a: "Nahi. Review Google par customer ke account se jata hai, aur Semsorted use hide ya delete nahi kar sakta." },
 ];
 
 export const siteQr = () => QRCode.toString(SITE_URL, { type: "svg", margin: 0, errorCorrectionLevel: "M", color: { dark: "#202124", light: "#0000" } });
@@ -64,12 +56,14 @@ export function WhatsAppButton({ className, label }: { className: string; label:
   );
 }
 
-export function PageIntro({ title, text }: { title: string; text: string }) {
+export function EndCta({ title, button }: { title: string; button: string }) {
   return (
-    <div className={`${wrap} pb-6 pt-14 lg:pt-24`}>
-      <h1 className="max-w-[16ch] text-[clamp(3rem,6.6vw,5.75rem)] font-semibold leading-[1] tracking-[-0.035em]">{title}</h1>
-      <p className="mt-6 max-w-[52ch] text-xl leading-relaxed text-moss">{text}</p>
-    </div>
+    <section className="bg-mist">
+      <div className={`${wrap} flex flex-wrap items-center justify-between gap-6 py-12`}>
+        <p className="max-w-[24ch] font-display text-[clamp(1.75rem,3vw,2.5rem)] font-semibold leading-tight">{title}</p>
+        <WhatsAppButton label={button} className="bg-whatsapp text-white hover:bg-whatsapp-deep" />
+      </div>
+    </section>
   );
 }
 
@@ -209,12 +203,12 @@ export function QuotesSection() {
   );
 }
 
-export function FaqSection({ items = FAQS, title = "Aapke sawaal" }: { items?: typeof FAQS; title?: string }) {
+export function FaqSection() {
   return (
     <section id="sawaal" aria-labelledby="sawaal-title" className={`${wrap} grid scroll-mt-20 gap-10 py-20 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20 lg:py-28`}>
-      <h2 id="sawaal-title" className={h2}>{title}</h2>
+      <h2 id="sawaal-title" className={h2}>Aapke sawaal</h2>
       <div>
-        {items.map((faq) => (
+        {FAQS.map((faq) => (
           <details key={faq.q} className="group border-t border-line last:border-b">
             <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-4 py-4 text-xl font-medium [&::-webkit-details-marker]:hidden">
               {faq.q}
@@ -228,15 +222,14 @@ export function FaqSection({ items = FAQS, title = "Aapke sawaal" }: { items?: t
   );
 }
 
-export function ContactSection({ asPageTitle = false }: { asPageTitle?: boolean }) {
-  const Heading = asPageTitle ? "h1" : "h2";
+export function ContactSection() {
   return (
     <section id="contact" aria-labelledby="contact-title" className="relative scroll-mt-20 overflow-hidden bg-g-blue text-white">
       <svg aria-hidden viewBox="-2 -2 52 52" className="absolute -right-24 -top-1/4 h-[150%] text-white/10">
         <path fill="none" stroke="currentColor" strokeWidth="8.5" d="M34 14A10 10 0 1 0 24 24A10 10 0 1 1 14 34" />
       </svg>
       <div className={`${wrap} relative py-20 lg:py-28`}>
-        <Heading id="contact-title" className="max-w-[15ch] text-[clamp(2.75rem,6.4vw,5.5rem)] font-semibold leading-[1]">Apni shop ka review QR banwana hai?</Heading>
+        <h2 id="contact-title" className="max-w-[15ch] text-[clamp(2.75rem,6.4vw,5.5rem)] font-semibold leading-[1]">Apni shop ka review QR banwana hai?</h2>
         <p className="mt-6 max-w-[46ch] text-xl leading-relaxed text-white/90">WhatsApp par shop ka naam aur type bhej do. Hum chips aur QR ready kar denge.</p>
         <WhatsAppButton label="WhatsApp par message karein" className="mt-8 bg-white text-whatsapp hover:bg-g-green-tint" />
       </div>

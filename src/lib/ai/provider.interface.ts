@@ -25,6 +25,7 @@ export interface GenerateReviewDraftInput {
   language: ReviewLanguage;
   temperature?: number;
   maxTokens?: number;
+  timeoutMs?: number;
 }
 
 export interface GenerateReviewDraftOutput {
