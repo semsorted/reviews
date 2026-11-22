@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
   draftFindMany: vi.fn(),
   draftFindFirst: vi.fn(),
   draftUpdateOne: vi.fn(),
+  feedbackUpsert: vi.fn(),
+  feedbackDelete: vi.fn(),
   aiCount: vi.fn(),
   aiWrite: vi.fn(),
   aiConfigured: vi.fn(),
@@ -46,6 +48,7 @@ vi.mock("@/lib/prisma", () => ({
           findFirst: mocks.draftFindFirst,
           update: mocks.draftUpdateOne,
         },
+        reviewFeedback: { upsert: mocks.feedbackUpsert, deleteMany: mocks.feedbackDelete },
       }),
   },
 }));
@@ -122,6 +125,22 @@ describe("POST /api/review/generate", () => {
     const { data } = mocks.draftCreate.mock.calls[0][0];
     expect(data).toMatchObject({ sessionId, shopId, customerNotes: "Rating 4: Service, Taste", language: "hinglish", provider: "instant", generatedText: seen[0] });
     expect(mocks.aiWrite).not.toHaveBeenCalled();
+  });
+
+  it.each([1, 2])("adds a %i-star customer to Needs attention", async (rating) => {
+    await record(post("/api/review/generate", { ...body, rating }));
+    expect(mocks.feedbackUpsert).toHaveBeenCalledWith({
+      where: { sessionId },
+      create: { sessionId, shopId, rating },
+      update: { rating },
+    });
+    expect(mocks.feedbackDelete).not.toHaveBeenCalled();
+  });
+
+  it("removes an unsent attention item when the customer raises the rating", async () => {
+    await record(post("/api/review/generate", { ...body, rating: 3 }));
+    expect(mocks.feedbackDelete).toHaveBeenCalledWith({ where: { sessionId, message: null, status: "OPEN" } });
+    expect(mocks.feedbackUpsert).not.toHaveBeenCalled();
   });
 
   it("checks other customers' reviews from this shop under a shop lock", async () => {

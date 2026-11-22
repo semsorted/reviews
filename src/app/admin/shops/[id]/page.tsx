@@ -1,19 +1,28 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, BellRing, ChartNoAxesCombined, CircleCheck, QrCode } from "lucide-react";
 import { isUuid, publicQrUrl } from "@/lib/admin/api";
-import { requireAdminPage } from "@/lib/auth/guard";
+import { getAttention, parseAttentionFilter } from "@/lib/admin/attention";
 import { getShopTracking } from "@/lib/admin/tracking";
 import { formatWhen, parseRange, percent } from "@/lib/admin/tracking-core";
+import { shopTone, TONE_CLASS } from "@/lib/admin/tones";
+import { requireAdminPage } from "@/lib/auth/guard";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 import { ActivityChart } from "../../_components/ActivityChart";
+import { AttentionList } from "../../_components/AttentionList";
 import { ChipManager } from "../../_components/ChipManager";
 import { QrManager } from "../../_components/QrManager";
 import { ShopForm } from "../../_components/ShopForm";
-import { ActivityFeed, ChipBars, FunnelBars, GeminiUsage, Pager, Panel, RangeTabs, RatingBars, ReviewList, StatRow } from "../../_components/TrackingBlocks";
+import { ActivityFeed, ChipBars, CoverStats, FunnelBars, GeminiUsage, Pager, Panel, RangeTabs, RatingBars, ReviewList } from "../../_components/TrackingBlocks";
 
-type Search = { range?: string | string[]; tab?: string | string[]; page?: string | string[] };
+type Search = { range?: string | string[]; tab?: string | string[]; page?: string | string[]; status?: string | string[] };
+
+const TABS = [
+  { id: "tracking", label: "Tracking", icon: ChartNoAxesCombined },
+  { id: "attention", label: "Needs attention", icon: BellRing },
+  { id: "manage", label: "QR, chips and details", icon: QrCode },
+] as const;
 
 export default async function ShopPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Search> }) {
   await requireAdminPage();
@@ -21,7 +30,7 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
   if (!isUuid(id)) notFound();
   const search = await searchParams;
   const range = parseRange(search.range);
-  const tab = search.tab === "manage" ? "manage" : "tracking";
+  const tab = TABS.find((item) => item.id === search.tab)?.id ?? "tracking";
   const requestedPage = typeof search.page === "string" && /^[1-9]\d{0,5}$/.test(search.page) ? Number(search.page) : 1;
 
   const shop = await prisma.shop.findUnique({
@@ -34,39 +43,60 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
   if (!shop) notFound();
 
   const base = `/admin/shops/${shop.id}`;
-  const tracking = tab === "tracking" ? await getShopTracking(shop.id, range, requestedPage) : null;
+  const attentionFilter = parseAttentionFilter(search.status);
+  const [tracking, attention] = await Promise.all([
+    tab === "tracking" ? getShopTracking(shop.id, range, requestedPage) : null,
+    getAttention(tab === "attention" ? attentionFilter : "OPEN", tab === "attention" ? requestedPage : 1, shop.id),
+  ]);
 
   return (
-    <>
-      <Link href={{ pathname: "/admin", query: { range } }} className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-moss hover:text-ink">
-        <ArrowLeft aria-hidden className="size-4" /> Dashboard
+    <div className="space-y-5">
+      <Link href="/admin/shops" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-moss hover:text-ink">
+        <ArrowLeft aria-hidden className="size-4" /> All shops
       </Link>
 
-      <div className="mt-2 flex flex-wrap items-baseline gap-x-3">
-        <h1 className="text-[2.35rem] font-bold">{shop.name}</h1>
-        <span className={`font-semibold ${shop.isActive ? "text-pine" : "text-moss"}`}>
-          {shop.isActive ? "Live" : "Paused"}
-        </span>
-      </div>
-      <p className="mt-1 text-moss">{shop.businessCategory}. Created {formatWhen(shop.createdAt)}.</p>
+      <header className={cn("relative overflow-hidden rounded-l-md rounded-r-3xl p-6 pl-7 shadow-[inset_12px_0_16px_-10px_rgb(0_0_0/0.4)] sm:p-8 sm:pl-9", TONE_CLASS[shopTone(shop.id)])}>
+        <svg aria-hidden viewBox="-2 -2 52 52" className="absolute -right-6 -top-14 size-72 opacity-[0.13]">
+          <path fill="none" stroke="currentColor" strokeWidth="8.5" d="M34 14A10 10 0 1 0 24 24A10 10 0 1 1 14 34" />
+        </svg>
+        <div className="relative">
+          <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
+            <span className="rounded-full bg-black/15 px-2.5 py-0.5 font-semibold">{shop.isActive ? "Live" : "Paused"}</span>
+            {shop.businessCategory}
+          </p>
+          <h1 className="mt-3 max-w-[20ch] break-words text-[clamp(2.25rem,5vw,3.75rem)] font-semibold leading-none">{shop.name}</h1>
+          <p className="mt-3 text-sm opacity-90">Created {formatWhen(shop.createdAt)}</p>
+        </div>
+      </header>
 
-      <nav aria-label="Shop sections" className="mt-5 flex gap-1 border-b border-line">
-        {(["tracking", "manage"] as const).map((item) => (
-          <Link
-            key={item}
-            href={{ pathname: base, query: item === "manage" ? { tab: item, range } : { range } }}
-            aria-current={tab === item ? "page" : undefined}
-            className={cn("-mb-px inline-flex min-h-11 items-center border-b-2 px-4 font-semibold", tab === item ? "border-g-blue text-g-blue" : "border-transparent text-moss hover:text-ink")}
-          >
-            {item === "tracking" ? "Tracking" : "QR, chips and details"}
-          </Link>
-        ))}
+      <nav aria-label="Shop sections" className="flex gap-1 overflow-x-auto rounded-full bg-paper p-1">
+        {TABS.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.id}
+              href={{ pathname: base, query: item.id === "tracking" ? { range } : { tab: item.id, range } }}
+              aria-current={tab === item.id ? "page" : undefined}
+              className={cn("inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold", tab === item.id ? "bg-night text-white" : "text-moss hover:text-ink")}
+            >
+              <Icon aria-hidden className="size-4" /> {item.label}
+              {item.id === "attention" && attention.open > 0 && <span className="min-w-5 rounded-full bg-g-red px-1 text-center text-xs font-bold leading-5 text-white">{attention.open}</span>}
+            </Link>
+          );
+        })}
       </nav>
 
-      {tracking ? (
-        <div className="mt-6 space-y-5">
+      {tracking && (
+        <>
           <RangeTabs base={base} range={range} />
-          <StatRow funnel={tracking.funnel} average={tracking.rating.average} />
+          <CoverStats
+            stats={[
+              { label: "QR scans", value: tracking.funnel.scans, note: "Unique customers", tone: "blue" },
+              { label: "Reviews ready", value: tracking.funnel.drafts, note: `${percent(tracking.funnel.drafts, tracking.funnel.scans)}% of scans`, tone: "deep" },
+              { label: "Sent to Google", value: tracking.funnel.google, note: `${percent(tracking.funnel.google, tracking.funnel.scans)}% of scans`, tone: "green" },
+              { label: "Average rating", value: tracking.rating.average === null ? "None" : tracking.rating.average.toFixed(1), note: "From customer taps", tone: "yellow" },
+            ]}
+          />
           <p className="text-sm text-moss">Sent to Google means the customer opened this shop&apos;s Google review page. Google does not tell us whether they tapped Post.</p>
 
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
@@ -74,7 +104,7 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
             <Panel title="Recent activity"><ActivityFeed items={tracking.activity} showShop={false} /></Panel>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             <Panel title="Customer journey"><FunnelBars funnel={tracking.funnel} /></Panel>
             <Panel title="Ratings"><RatingBars ratings={tracking.rating.breakdown} /></Panel>
             <Panel title="Top chips"><ChipBars chips={tracking.chips} /></Panel>
@@ -110,9 +140,39 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
             <ReviewList reviews={tracking.reviews} />
             <Pager base={base} page={requestedPage} pages={tracking.pages} params={{ range }} />
           </Panel>
-        </div>
-      ) : (
-        <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        </>
+      )}
+
+      {tab === "attention" && (
+        <>
+          <nav aria-label="Issue status" className="inline-flex rounded-full bg-paper p-1">
+            {(["OPEN", "RESOLVED", "ALL"] as const).map((filter) => (
+              <Link
+                key={filter}
+                href={{ pathname: base, query: { tab: "attention", range, status: filter } }}
+                aria-current={filter === attentionFilter ? "page" : undefined}
+                className={cn("inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold", filter === attentionFilter ? "bg-g-red text-white" : "text-moss hover:text-ink")}
+              >
+                {filter === "OPEN" ? "Open" : filter === "RESOLVED" ? "Resolved" : "All"}
+                <span className="tabular-nums opacity-80">{filter === "OPEN" ? attention.open : filter === "RESOLVED" ? attention.resolved : attention.open + attention.resolved}</span>
+              </Link>
+            ))}
+          </nav>
+          {attention.items.length ? (
+            <>
+              <AttentionList items={attention.items} showShop={false} />
+              <Pager base={base} page={requestedPage} pages={attention.pages} params={{ tab: "attention", range, status: attentionFilter }} label="Issue pages" />
+            </>
+          ) : (
+            <p className="flex items-center gap-2 rounded-2xl bg-g-green-tint p-6 font-medium text-g-green">
+              <CircleCheck aria-hidden className="size-5" /> {attentionFilter === "OPEN" ? "No open customer issues for this shop." : "Nothing to show here."}
+            </p>
+          )}
+        </>
+      )}
+
+      {tab === "manage" && (
+        <div className="grid gap-10 rounded-2xl bg-paper p-5 lg:grid-cols-[minmax(0,1fr)_22rem] lg:p-6">
           <div className="min-w-0 space-y-10">
             <QrManager
               shopId={shop.id}
@@ -149,6 +209,6 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
           </aside>
         </div>
       )}
-    </>
+    </div>
   );
 }

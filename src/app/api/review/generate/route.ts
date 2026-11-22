@@ -19,11 +19,11 @@ const RecordDraftSchema = z.object({
     .refine((ids) => new Set(ids).size === ids.length),
 });
 
-type DraftOwner = { shopId: string; sessionId: string; customerNotes: string; language: string };
+type DraftOwner = { shopId: string; sessionId: string; rating: number; customerNotes: string; language: string };
 
 /** Saves the first review this shop has not used. Returns "used" when none is left, or null at the session limit. */
 function claimDraft(owner: DraftOwner, texts: string[], provider: string, model: string, allowRepeat = false) {
-  const { shopId, sessionId, customerNotes, language } = owner;
+  const { shopId, sessionId, rating, customerNotes, language } = owner;
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${shopId}::text, 0))`;
     const taken = await tx.reviewDraft.findMany({
@@ -35,13 +35,20 @@ function claimDraft(owner: DraftOwner, texts: string[], provider: string, model:
 
     const data = { customerNotes, generatedText: text, provider, model, language, style: "natural" };
     const open = await tx.reviewDraft.findFirst({ where: { sessionId, isCopied: false }, orderBy: { createdAt: "desc" }, select: { id: true } });
+    let saved: { id: string; text: string; created: boolean };
     if (open) {
       await tx.reviewDraft.update({ where: { id: open.id }, data });
-      return { id: open.id, text, created: false };
+      saved = { id: open.id, text, created: false };
+    } else {
+      if ((await tx.reviewDraft.count({ where: { sessionId } })) >= MAX_DRAFTS_PER_SESSION) return null;
+      const draft = await tx.reviewDraft.create({ data: { ...data, sessionId, shopId }, select: { id: true } });
+      saved = { id: draft.id, text, created: true };
     }
-    if ((await tx.reviewDraft.count({ where: { sessionId } })) >= MAX_DRAFTS_PER_SESSION) return null;
-    const draft = await tx.reviewDraft.create({ data: { ...data, sessionId, shopId }, select: { id: true } });
-    return { id: draft.id, text, created: true };
+
+    // Low ratings go to the admin queue. A customer who raises the rating before messaging leaves it.
+    if (rating <= 2) await tx.reviewFeedback.upsert({ where: { sessionId }, create: { sessionId, shopId, rating }, update: { rating } });
+    else await tx.reviewFeedback.deleteMany({ where: { sessionId, message: null, status: "OPEN" } });
+    return saved;
   });
 }
 
@@ -87,7 +94,7 @@ export async function POST(request: NextRequest) {
     }
     const labels = chipIds.map((id) => shop.chips.find((chip) => chip.id === id)!.label);
     const language = toReviewLanguage(shop.defaultLanguage);
-    const owner = { shopId: shop.id, sessionId, customerNotes: `Rating ${rating}: ${labels.join(", ")}`, language };
+    const owner = { shopId: shop.id, sessionId, rating, customerNotes: `Rating ${rating}: ${labels.join(", ")}`, language };
     const candidates = localCandidates({ shopName: shop.name, rating, chips: labels, language }, sessionId, variant);
 
     let source: "instant" | "gemini" | "repeat" = "instant";

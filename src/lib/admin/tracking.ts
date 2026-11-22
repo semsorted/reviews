@@ -25,12 +25,15 @@ const AUDIT_LABELS: Record<string, string> = {
   "chip.create": "Chip added",
   "chip.update": "Chip updated",
   "chip.delete": "Chip removed",
+  "attention.resolve": "Customer issue resolved",
+  "attention.reopen": "Customer issue reopened",
 };
 const EVENT_LABELS: Record<string, string> = {
   qr_scan: "QR scanned",
   draft_generated: "Review drafted",
   copy_click: "Review copied",
   google_review_click: "Sent to Google",
+  private_feedback: "Private message received",
 };
 
 /** Counts unique customers, so tapping a button twice does not inflate results. */
@@ -112,7 +115,7 @@ function ratingSummary(rows: { rating: number; count: number }[]) {
 export async function getOverview(range: TrackingRange) {
   const since = rangeStart(range);
   // ponytail: loads every shop for instant search; add server pagination past a few hundred shops.
-  const [shops, funnels, ratings, latest, daily, gemini, activity] = await Promise.all([
+  const [shops, funnels, ratings, latest, daily, gemini, activity, openItems] = await Promise.all([
     prisma.shop.findMany({ orderBy: { createdAt: "desc" }, select: { id: true, name: true, businessCategory: true, isActive: true, createdAt: true, _count: { select: { qrCodes: true } } } }),
     funnelRows(since),
     ratingRows(since),
@@ -120,6 +123,7 @@ export async function getOverview(range: TrackingRange) {
     dailyPoints(range),
     geminiUsage(),
     recentActivity(),
+    prisma.reviewFeedback.groupBy({ by: ["shopId"], where: { status: "OPEN" }, _count: { _all: true } }),
   ]);
 
   const totals = emptyFunnel();
@@ -144,6 +148,7 @@ export async function getOverview(range: TrackingRange) {
       ...(byShop.get(shop.id) ?? emptyFunnel()),
       rating: ratingSummary(shopRatings).average,
       lastActivity: last ? formatWhen(last) : null,
+      open: openItems.find((row) => row.shopId === shop.id)?._count._all ?? 0,
     };
   });
 

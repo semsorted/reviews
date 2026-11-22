@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { Check, RefreshCw, Star } from "lucide-react";
 import type { ReviewLanguage } from "@/lib/ai/provider.interface";
 import { copyDraft, copyViaCommand } from "@/lib/reviews/copy-draft";
@@ -39,6 +39,8 @@ export default function CustomerReviewClient({ token, sessionId, language, shop,
   const [isEdited, setIsEdited] = useState(false);
   const [isStale, setIsStale] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "manual">("idle");
+  const [privateNote, setPrivateNote] = useState("");
+  const [privateState, setPrivateState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const recordRef = useRef<Promise<string | null> | null>(null);
   const syncRef = useRef(0);
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -159,6 +161,22 @@ export default function CustomerReviewClient({ token, sessionId, language, shop,
       if (copied) track("copy_click");
       else selectDraft();
     });
+  };
+
+  const sendPrivateNote = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!privateNote.trim() || privateState === "sending") return;
+    setPrivateState("sending");
+    try {
+      const res = await fetch("/api/review/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, sessionId, rating, message: privateNote }),
+      });
+      setPrivateState(res.ok ? "sent" : "error");
+    } catch {
+      setPrivateState("error");
+    }
   };
 
   const hint =
@@ -287,6 +305,39 @@ export default function CustomerReviewClient({ token, sessionId, language, shop,
             <p className="mt-1.5 text-sm text-review-muted">
               {isStale ? "Your choices changed. Tap Update to match them." : "Edit anything so it sounds like you."}
             </p>
+          </section>
+        )}
+
+        {rating > 0 && rating <= 2 && (
+          <section aria-labelledby="private-title" className="mt-6 rounded-lg border border-review-line p-4">
+            {privateState === "sent" ? (
+              <p role="status" className="flex gap-2 text-[0.9375rem]">
+                <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-review-blue" strokeWidth={2.5} />
+                Sent privately to {shop.name}. You can still post your review on Google.
+              </p>
+            ) : (
+              <form onSubmit={sendPrivateNote}>
+                <h2 id="private-title" className="font-medium">Tell the shop privately</h2>
+                <p className="mt-0.5 text-sm text-review-muted">Only the shop team sees this. It does not replace your Google review.</p>
+                <label htmlFor="private-note" className="sr-only">Your private message</label>
+                <textarea
+                  id="private-note"
+                  value={privateNote}
+                  maxLength={1000}
+                  rows={3}
+                  placeholder="What went wrong?"
+                  onChange={(event) => {
+                    setPrivateNote(event.target.value);
+                    if (privateState === "error") setPrivateState("idle");
+                  }}
+                  className="slip-text mt-2 block max-h-48 w-full resize-none rounded-lg border border-review-line bg-white p-3 text-base leading-relaxed outline-none focus:border-review-blue focus:ring-1 focus:ring-review-blue"
+                />
+                {privateState === "error" && <p role="alert" className="mt-1.5 text-sm text-danger">This did not send. Check your connection and try again.</p>}
+                <button type="submit" disabled={!privateNote.trim() || privateState === "sending"} className="mt-2 inline-flex min-h-11 items-center rounded-full border border-review-line px-4 text-sm font-medium text-review-blue disabled:opacity-40">
+                  {privateState === "sending" ? "Sending" : "Send privately"}
+                </button>
+              </form>
+            )}
           </section>
         )}
       </main>

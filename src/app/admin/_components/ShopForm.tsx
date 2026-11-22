@@ -126,7 +126,7 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
     const result = await adminRequest(`/api/admin/shops/${shop!.id}`, "DELETE");
     if (!result.ok) setError(result.error);
     else {
-      router.push("/admin");
+      router.push("/admin/shops");
       router.refresh();
     }
   };
