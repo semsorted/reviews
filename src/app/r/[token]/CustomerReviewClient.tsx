@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type MouseEvent } from "react";
 import { Check, RefreshCw, Star } from "lucide-react";
 import type { ReviewLanguage } from "@/lib/ai/provider.interface";
 import { copyDraft, copyViaCommand } from "@/lib/reviews/copy-draft";
 import { seededRandom, writeInstantDraft } from "@/lib/reviews/instant-draft";
+import { readReviewDone, saveReviewDone, type ReviewDone } from "@/lib/reviews/review-done";
 import { MAX_CHIPS, MIN_CHIPS } from "@/lib/reviews/rules";
 import { cn } from "@/lib/utils";
 import { COPY } from "./copy";
@@ -37,7 +38,69 @@ function monogramTextColor(hex: string) {
   return 0.299 * r + 0.587 * g + 0.114 * b > 160 ? "#1f2328" : "#ffffff";
 }
 
+const tabStorage = () => {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+};
+const noSubscription = () => () => {};
+const doneNow = (kind: ReviewDone["kind"], text: string): ReviewDone => ({ kind, text, at: Date.now() });
+
+function ShopMark({ shop }: { shop: CustomerReviewClientProps["shop"] }) {
+  return shop.logoUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={shop.logoUrl} alt="" className="size-11 shrink-0 rounded-full border border-review-line bg-white object-contain p-0.5" />
+  ) : (
+    <div
+      aria-hidden
+      className="flex size-11 shrink-0 items-center justify-center rounded-full text-lg font-medium"
+      style={{ backgroundColor: shop.primaryColor, color: monogramTextColor(shop.primaryColor) }}
+    >
+      {shop.name.charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
+function DoneScreen({ done, shop, onGoogle }: { done: ReviewDone; shop: CustomerReviewClientProps["shop"]; onGoogle: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const isGoogle = done.kind === "google";
+  const copyAgain = () => {
+    if (copyViaCommand(done.text)) setCopied(true);
+    else void copyDraft(done.text, navigator.clipboard).then(setCopied);
+  };
+
+  return (
+    <div className="review-surface min-h-dvh bg-white text-review-ink">
+      <main className="mx-auto flex min-h-dvh w-full max-w-[28rem] flex-col items-center justify-center px-6 py-10 text-center">
+        <ShopMark shop={shop} />
+        <p className="mt-2 max-w-full truncate text-sm text-review-muted">{shop.name}</p>
+        <span className="mt-6 flex size-14 items-center justify-center rounded-full bg-review-tint text-review-blue">
+          <Check aria-hidden className="size-7" strokeWidth={2.5} />
+        </span>
+        <h1 className="mt-4 text-2xl font-medium">{isGoogle ? COPY.doneTitle : COPY.sentTitle}</h1>
+        <p className="mt-2 max-w-[22rem] leading-relaxed text-review-muted">{isGoogle ? COPY.doneText : COPY.sentText}</p>
+        <div className="mt-6 w-full space-y-2">
+          <button type="button" onClick={onGoogle} className={cn(actionClass, isGoogle ? "bg-review-blue text-white" : "border border-review-blue text-review-blue")}>
+            {isGoogle ? COPY.openAgain : COPY.postGoogle}
+          </button>
+          {isGoogle && (
+            <button type="button" onClick={copyAgain} className={cn(actionClass, "border border-review-line text-review-blue")}>
+              {copied && <Check aria-hidden className="size-5" />}
+              {copied ? COPY.copiedAgain : COPY.copyAgain}
+            </button>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
 export default function CustomerReviewClient({ token, sessionId, language: defaultLanguage, headline, shop, chips }: CustomerReviewClientProps) {
+  const savedDone = useSyncExternalStore(noSubscription, () => readReviewDone(tabStorage(), token), () => null);
+  const restoredDone = useMemo<ReviewDone | null>(() => (savedDone ? JSON.parse(savedDone) : null), [savedDone]);
+  const [finished, setFinished] = useState<ReviewDone | null>(null);
   const [language, setLanguage] = useState(defaultLanguage);
   const [rating, setRating] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
@@ -46,8 +109,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
   const [isEdited, setIsEdited] = useState(false);
   const [isStale, setIsStale] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "manual">("idle");
-  const [privateNote, setPrivateNote] = useState("");
-  const [privateState, setPrivateState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [privateState, setPrivateState] = useState<"idle" | "sending" | "error">("idle");
   const recordRef = useRef<Promise<string | null> | null>(null);
   const syncRef = useRef(0);
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -59,6 +121,8 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
   const hasDraft = draftText.trim().length > 0;
   const isReady = rating > 0 && selected.length >= MIN_CHIPS;
   const atLimit = selected.length >= MAX_CHIPS;
+  const isLowRating = rating > 0 && rating <= 2;
+  const done = finished ?? restoredDone;
 
   useEffect(() => {
     if (!hasDraft || didRevealDraft.current) return;
@@ -99,8 +163,8 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
     }, 120);
   };
 
-  const track = (eventType: "copy_click" | "regenerate_click" | "google_review_click") => {
-    void (recordRef.current ?? Promise.resolve(null))
+  const track = (eventType: "copy_click" | "regenerate_click" | "google_review_click") =>
+    (recordRef.current ?? Promise.resolve(null))
       .then((draftId) =>
         fetch("/api/analytics/event", {
           method: "POST",
@@ -110,6 +174,18 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
         })
       )
       .catch(() => {});
+
+  const finish = (next: ReviewDone) => {
+    saveReviewDone(tabStorage(), token, next);
+    setFinished(next);
+  };
+
+  // Replace removes this page from history, so Back from Google cannot reopen the review form.
+  const leaveForGoogle = async (text: string, wasCopied: boolean) => {
+    finish(doneNow("google", text));
+    const events = wasCopied ? [track("copy_click"), track("google_review_click")] : [track("google_review_click")];
+    await Promise.race([Promise.allSettled(events), new Promise((resolve) => setTimeout(resolve, 300))]);
+    window.location.replace(shop.googleReviewUrl);
   };
 
   const applySelection = (nextRating: number, nextSelected: string[], nextLanguage = language) => {
@@ -142,7 +218,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
     setIsStale(false);
     setCopyState("idle");
     recordDraft(rating, selected, nextVariant, language, nextText);
-    track("regenerate_click");
+    void track("regenerate_click");
   };
 
   const selectDraft = () => {
@@ -150,43 +226,51 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
     textRef.current?.select();
   };
 
-  // Copying must start inside the link click, before the browser leaves this page.
+  // Copying must start inside the click, before the browser leaves this page.
   const copyAndContinue = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
     syncRef.current++; // Never change the text after the customer has copied it.
     if (copyViaCommand(draftText)) {
       setCopyState("copied");
-      track("copy_click");
-      track("google_review_click");
+      void leaveForGoogle(draftText, true);
       return;
     }
     if (copyState !== "idle") {
-      track("google_review_click");
+      void leaveForGoogle(draftText, false);
       return;
     }
 
-    event.preventDefault();
     void copyDraft(draftText, navigator.clipboard).then((copied) => {
       setCopyState(copied ? "copied" : "manual");
-      if (copied) track("copy_click");
+      if (copied) void leaveForGoogle(draftText, true);
       else selectDraft();
     });
   };
 
-  const sendPrivateNote = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!privateNote.trim() || privateState === "sending") return;
+  const sendToUs = async () => {
+    if (!hasDraft || privateState === "sending") return;
+    syncRef.current++;
     setPrivateState("sending");
     try {
       const res = await fetch("/api/review/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, sessionId, rating, message: privateNote }),
+        body: JSON.stringify({ token, sessionId, rating, message: draftText.trim().slice(0, 1000) }),
       });
-      setPrivateState(res.ok ? "sent" : "error");
+      if (!res.ok) return setPrivateState("error");
+      setPrivateState("idle");
+      finish(doneNow("private", draftText));
     } catch {
       setPrivateState("error");
     }
   };
+
+  const openGoogleFromDone = (text: string) => {
+    if (copyViaCommand(text)) void leaveForGoogle(text, true);
+    else void copyDraft(text, navigator.clipboard).then((copied) => leaveForGoogle(text, copied));
+  };
+
+  if (done) return <DoneScreen done={done} shop={shop} onGoogle={() => openGoogleFromDone(done.text)} />;
 
   const hint =
     copyState === "manual"
@@ -194,7 +278,9 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
       : copyState === "copied"
         ? copy.hintCopied
         : hasDraft
-          ? copy.hintReady
+          ? isLowRating
+            ? copy.hintLow
+            : copy.hintReady
           : rating === 0
             ? copy.hintStart
             : copy.hintMore(Math.max(MIN_CHIPS - selected.length, 1));
@@ -203,18 +289,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
     <div className="review-surface min-h-dvh bg-white text-review-ink">
       <main className="mx-auto w-full max-w-[28rem] px-5 pb-44 pt-5">
         <header className="flex items-center gap-3">
-          {shop.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={shop.logoUrl} alt="" className="size-11 shrink-0 rounded-full border border-review-line bg-white object-contain p-0.5" />
-          ) : (
-            <div
-              aria-hidden
-              className="flex size-11 shrink-0 items-center justify-center rounded-full text-lg font-medium"
-              style={{ backgroundColor: shop.primaryColor, color: monogramTextColor(shop.primaryColor) }}
-            >
-              {shop.name.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <ShopMark shop={shop} />
           <div className="min-w-0">
             <h1 className="truncate text-[1.0625rem] font-medium">{shop.name}</h1>
             <p className="truncate text-sm text-review-muted">{shop.businessCategory}</p>
@@ -279,7 +354,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
 
         <fieldset className="mt-4">
           <legend className="contents">
-            <h2 className="font-medium">{rating > 0 && rating <= 2 ? copy.improve : copy.standOut}</h2>
+            <h2 className="font-medium">{isLowRating ? copy.improve : copy.standOut}</h2>
           </legend>
           <p className="mt-0.5 text-sm text-review-muted" aria-live="polite">
             {atLimit ? copy.picked(MAX_CHIPS) : copy.pick(MIN_CHIPS, MAX_CHIPS)}
@@ -342,47 +417,24 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
           </section>
         )}
 
-        {rating > 0 && rating <= 2 && (
-          <section aria-labelledby="private-title" className="mt-6 rounded-lg border border-review-line p-4">
-            {privateState === "sent" ? (
-              <p role="status" className="flex gap-2 text-[0.9375rem]">
-                <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-review-blue" strokeWidth={2.5} />
-                {copy.privateSent}
-              </p>
-            ) : (
-              <form onSubmit={sendPrivateNote}>
-                <h2 id="private-title" className="font-medium">{copy.privateTitle}</h2>
-                <p className="mt-0.5 text-sm text-review-muted">{copy.privateText}</p>
-                <label htmlFor="private-note" className="sr-only">{copy.privateLabel}</label>
-                <textarea
-                  id="private-note"
-                  value={privateNote}
-                  maxLength={1000}
-                  rows={3}
-                  placeholder={copy.privatePlaceholder}
-                  onChange={(event) => {
-                    setPrivateNote(event.target.value);
-                    if (privateState === "error") setPrivateState("idle");
-                  }}
-                  className="slip-text mt-2 block max-h-48 w-full resize-none rounded-lg border border-review-line bg-white p-3 text-base leading-relaxed outline-none focus:border-review-blue focus:ring-1 focus:ring-review-blue"
-                />
-                {privateState === "error" && <p role="alert" className="mt-1.5 text-sm text-danger">{copy.privateError}</p>}
-                <button type="submit" disabled={!privateNote.trim() || privateState === "sending"} className="mt-2 inline-flex min-h-11 items-center rounded-full border border-review-line px-4 text-sm font-medium text-review-blue disabled:opacity-40">
-                  {privateState === "sending" ? copy.sending : copy.send}
-                </button>
-              </form>
-            )}
-          </section>
-        )}
       </main>
 
       <div className="fixed inset-x-0 bottom-0 border-t border-review-line bg-white pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
         <div className="mx-auto w-full max-w-[28rem] px-5">
-          {hasDraft ? (
+          {hasDraft && isLowRating ? (
+            // Both stay the same size: Google does not allow discouraging low-rating reviews.
+            <div className="grid grid-cols-2 gap-2">
+              <a href={shop.googleReviewUrl} rel="noreferrer" onClick={copyAndContinue} className={cn(actionClass, "border border-review-blue px-3 text-review-blue")}>
+                {copy.postGoogle}
+              </a>
+              <button type="button" onClick={sendToUs} disabled={privateState === "sending"} className={cn(actionClass, "bg-review-blue px-3 text-white disabled:opacity-60")}>
+                {privateState === "sending" ? copy.sending : copy.send}
+              </button>
+            </div>
+          ) : hasDraft ? (
             <a
               href={shop.googleReviewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              rel="noreferrer"
               onClick={copyAndContinue}
               className={cn(actionClass, "bg-review-blue text-white")}
             >
@@ -394,6 +446,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
               {copy.copyNext}
             </button>
           )}
+          {privateState === "error" && <p role="alert" className="mt-1.5 text-center text-sm text-danger">{copy.privateError}</p>}
           <p role="status" className="mt-1.5 text-center text-sm text-review-muted">
             {hint}
           </p>

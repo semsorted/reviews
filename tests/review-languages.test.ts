@@ -26,7 +26,8 @@ describe("review language", () => {
   });
 
   it("never tells a customer the shop itself reads the private message", () => {
-    expect(`${COPY.privateTitle} ${COPY.privateText} ${COPY.privateSent}`).toContain("Semsorted");
+    expect(COPY.hintLow).toContain("Semsorted team");
+    expect(COPY.sentText).toContain("Semsorted team");
   });
 
   it("keeps all page text in English", () => {
