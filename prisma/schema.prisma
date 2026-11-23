@@ -302,6 +302,25 @@ model AiProviderSetting {
   @@map("ai_provider_settings")
 }
 
+model PosterPricing {
+  id          Int      @id @default(1)
+  normalPrice Int      @default(1999) @map("normal_price")
+  customPrice Int      @default(2250) @map("custom_price")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("poster_pricing")
+}
+
+model PosterCoupon {
+  id        String   @id @default(uuid()) @db.Uuid
+  code      String   @unique
+  amountOff Int      @map("amount_off")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("poster_coupons")
+}
+
 model AuditLog {
   id         String   @id @default(uuid()) @db.Uuid
   userId     String?  @map("user_id") @db.Uuid

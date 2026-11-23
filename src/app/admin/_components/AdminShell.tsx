@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BellRing, ChartNoAxesCombined, LayoutDashboard, LogOut, Plus, Store } from "lucide-react";
+import { BellRing, ChartNoAxesCombined, LayoutDashboard, LogOut, Plus, Settings, Store } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import { RenewalPopup, type RenewalItem } from "./RenewalPopup";
@@ -12,6 +12,7 @@ const NAV = [
   { href: "/admin/attention", label: "Needs attention", short: "Attention", icon: BellRing, tint: "bg-g-red text-white" },
   { href: "/admin/tracking", label: "Tracking", short: "Tracking", icon: ChartNoAxesCombined, tint: "bg-g-green text-white" },
   { href: "/admin/shops", label: "Businesses", short: "Business", icon: Store, tint: "bg-g-yellow text-ink" },
+  { href: "/admin/settings", label: "Settings", short: "Settings", icon: Settings, tint: "bg-moss text-white" },
 ];
 
 function SignOut({ className }: { className?: string }) {
@@ -78,7 +79,7 @@ export function AdminShell({ openCount, renewals, today, children }: { openCount
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>
 
-      <nav aria-label="Admin" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-paper pb-[env(safe-area-inset-bottom)] lg:hidden">
+      <nav aria-label="Admin" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-paper pb-[env(safe-area-inset-bottom)] lg:hidden">
         {NAV.map((item) => {
           const Icon = item.icon;
           const current = isCurrent(item.href);
