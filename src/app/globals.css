@@ -272,4 +272,8 @@ h3 {
     width: 148mm;
     height: 210mm;
   }
+  .qr-sheet[data-size="4x6"] {
+    width: 4in;
+    height: 6in;
+  }
 }

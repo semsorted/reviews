@@ -15,7 +15,7 @@ import { CustomPoster, NormalPoster } from "../../../../_components/QrPosters";
 
 export const metadata = { title: "QR poster" };
 
-const SIZES = { a4: { label: "A4 wall poster", page: "A4" }, a5: { label: "A5 counter card", page: "A5" } } as const;
+const SIZES = { a4: { label: "A4 wall poster", page: "A4 portrait" }, a5: { label: "A5 counter card", page: "A5 portrait" } } as const;
 const DESIGNS: { id: PosterDesign; label: string }[] = [{ id: "normal", label: "Normal" }, { id: "custom", label: "Custom" }];
 const svgSrc = (svg: string) => `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 const tabClass = (active: boolean) => cn("inline-flex min-h-10 items-center rounded-full px-4 text-sm font-semibold", active ? "bg-night text-white" : "text-moss hover:text-ink");
@@ -48,7 +48,6 @@ export default async function QrPosterPage({ params, searchParams }: { params: P
   // Normal and Custom print the same review QR.
   const qrSrc = svgSrc(await generateQrSvg({ url: publicQrUrl(qr.publicToken), margin: 4 }));
   const base = `/admin/shops/${id}/qr/${qrId}`;
-  const posterProps = { size, shopName: shop.name, logoUrl: shop.logoUrl, qrSrc, qrName: qr.name };
   // The repo is public, so the UPI link stays in a server-only setting.
   const paymentUrl = process.env.PAYMENT_UPI_URL?.trim();
   const payee = upiPayee(paymentUrl);
@@ -56,7 +55,7 @@ export default async function QrPosterPage({ params, searchParams }: { params: P
 
   return (
     <div className="space-y-5 print:space-y-0">
-      <style>{`@page{size:${SIZES[size].page} portrait;margin:0}`}</style>
+      <style>{`@page{size:${design === "normal" ? "4in 6in" : SIZES[size].page};margin:0}`}</style>
       <div className="space-y-4 print:hidden">
         <Link href={`/admin/shops/${id}?tab=manage`} className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-moss hover:text-ink">
           <ArrowLeft aria-hidden className="size-4" /> {shop.name}
@@ -68,11 +67,15 @@ export default async function QrPosterPage({ params, searchParams }: { params: P
                 <Link key={item.id} href={{ pathname: base, query: { size, design: item.id } }} replace scroll={false} aria-current={design === item.id ? "page" : undefined} className={tabClass(design === item.id)}>{item.label}</Link>
               ))}
             </nav>
-            <nav aria-label="Poster size" className="inline-flex rounded-full bg-paper p-1">
-              {(Object.keys(SIZES) as (keyof typeof SIZES)[]).map((key) => (
-                <Link key={key} href={{ pathname: base, query: { size: key, design } }} replace scroll={false} aria-current={size === key ? "page" : undefined} className={tabClass(size === key)}>{SIZES[key].label}</Link>
-              ))}
-            </nav>
+            {design === "normal" ? (
+              <span className="inline-flex min-h-12 items-center rounded-full bg-paper px-5 text-sm font-semibold text-moss">4×6 inch</span>
+            ) : (
+              <nav aria-label="Poster size" className="inline-flex rounded-full bg-paper p-1">
+                {(Object.keys(SIZES) as (keyof typeof SIZES)[]).map((key) => (
+                  <Link key={key} href={{ pathname: base, query: { size: key, design } }} replace scroll={false} aria-current={size === key ? "page" : undefined} className={tabClass(size === key)}>{SIZES[key].label}</Link>
+                ))}
+              </nav>
+            )}
           </div>
           <PosterCheckout base={base} size={size} design={design} prices={{ normal: pricing.normalPrice, custom: pricing.customPrice }} coupons={coupons} payment={payment} />
         </div>
@@ -84,10 +87,10 @@ export default async function QrPosterPage({ params, searchParams }: { params: P
       </div>
 
       {design === "normal" ? (
-        <NormalPoster {...posterProps} />
+        <NormalPoster shopName={shop.name} qrSrc={qrSrc} qrName={qr.name} />
       ) : (
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,34rem)_minmax(18rem,24rem)] lg:justify-center print:block">
-          <CustomPoster {...posterProps} poster={poster} />
+          <CustomPoster size={size} shopName={shop.name} logoUrl={shop.logoUrl} qrSrc={qrSrc} qrName={qr.name} poster={poster} />
           <div className="print:hidden">
             <BrandPanel shopId={id} website={shop.websiteUrl ?? ""} hasLogo={Boolean(shop.logoUrl)} current={{ primary: poster.background, surface: poster.page, accent: poster.accent }} />
           </div>

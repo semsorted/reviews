@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 const BRAND_BAR = [["#1a56db", 3], ["#12a150", 4], ["#e5484d", 2], ["#f5b301", 1]] as const;
 const OPTIONS = [
-  { id: "normal", name: "Normal", text: "Clean white poster, ready to print" },
+  { id: "normal", name: "Normal", text: "Clean white poster, 4×6 inch" },
   { id: "custom", name: "Custom", text: "Uses the business logo and colors" },
 ] as const;
 

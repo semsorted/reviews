@@ -37,10 +37,33 @@ describe("QR poster template", () => {
     for (const type of SHOP_TYPES) {
       for (const language of ["en", "hi", "hinglish"]) {
         const poster = posterFor(type.label, language, "#1A73E8");
-        const text = [poster.headline, poster.line, poster.cta, ...poster.steps].join(" ");
+        const text = [poster.headline, poster.title, poster.line, poster.cta].join(" ");
         expect(text).not.toMatch(/5.?star|five star|loved|enjoyed|happy|discount|offer|free|reward|इनाम|छूट/i);
         expect(contrast(poster.background, poster.foreground)).toBeGreaterThanOrEqual(4.5);
       }
+    }
+  });
+
+  it("uses the same poster title for every business and keeps Google in the call to action", () => {
+    for (const type of SHOP_TYPES) {
+      expect(posterFor(type.label, "en", "#1A73E8").title).toBe("Your opinion matters!");
+      for (const language of ["en", "hi", "hinglish"]) expect(posterFor(type.label, language, "#1A73E8").cta.split("Google")).toHaveLength(2);
+    }
+    expect(posterFor("Clinic", "en", "#1A73E8").cta).toBe("Scan to review us on Google");
+  });
+
+  it("changes the line under the title for each kind of business", () => {
+    const line = (type: string) => posterFor(type, "en", "#1A73E8").line;
+    expect(line("Clothing store")).toContain("collection");
+    expect(line("Grocery store")).toContain("freshness");
+    expect(line("Restaurant")).toContain("meal");
+    expect(line("Salon")).toContain("look");
+    expect(line("Gym")).toContain("training");
+    expect(line("Hotel")).toContain("stay");
+    expect(line("Veterinary clinic")).toContain("pet");
+    expect(line("Stamp collector")).toBe("Tell others how your experience was.");
+    for (const type of SHOP_TYPES) {
+      for (const language of ["en", "hi", "hinglish"]) expect(posterFor(type.label, language, "#1A73E8").line.length).toBeLessThanOrEqual(60);
     }
   });
 });
