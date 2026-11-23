@@ -117,11 +117,11 @@ export function CustomPoster({ size, shopName, logoUrl, qrSrc, qrName, poster }:
   const [beforeGoogle, afterGoogle] = poster.cta.split("Google");
   return (
     <article data-size={size} data-design="custom" lang={poster.lang === "hi" ? "hi" : "en"} className={cn(SHEET, "aspect-[210/297] max-w-[34rem]")} style={{ backgroundColor: poster.page, color: poster.ink }}>
-      <div className="flex h-[46cqw] shrink-0 flex-col items-center px-[7cqw] pt-[5.5cqw] text-center">
+      <div className={cn("flex h-[46cqw] shrink-0 flex-col items-center px-[7cqw] text-center", logoUrl ? "pt-[3.6cqw]" : "pt-[5.5cqw]")}>
         {logoUrl ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={logoUrl} alt="" className="h-[14cqw] max-w-[46cqw] object-contain" />
+            <img src={logoUrl} alt="" className="h-[20cqw] max-w-[60cqw] object-contain" />
             <h1 className="sr-only">{shopName}</h1>
           </>
         ) : (
