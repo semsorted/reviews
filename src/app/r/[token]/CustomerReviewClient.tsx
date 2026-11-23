@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { Check, RefreshCw, Star } from "lucide-react";
 import type { ReviewLanguage } from "@/lib/ai/provider.interface";
-import { hindiChip } from "@/lib/reviews/chip-hindi";
 import { copyDraft, copyViaCommand } from "@/lib/reviews/copy-draft";
 import { seededRandom, writeInstantDraft } from "@/lib/reviews/instant-draft";
 import { MAX_CHIPS, MIN_CHIPS } from "@/lib/reviews/rules";
@@ -14,7 +13,7 @@ export interface CustomerReviewClientProps {
   token: string;
   sessionId: string;
   language: ReviewLanguage;
-  headlines: Record<ReviewLanguage, string>;
+  headline: string;
   shop: {
     name: string;
     businessCategory: string;
@@ -38,7 +37,7 @@ function monogramTextColor(hex: string) {
   return 0.299 * r + 0.587 * g + 0.114 * b > 160 ? "#1f2328" : "#ffffff";
 }
 
-export default function CustomerReviewClient({ token, sessionId, language: defaultLanguage, headlines, shop, chips }: CustomerReviewClientProps) {
+export default function CustomerReviewClient({ token, sessionId, language: defaultLanguage, headline, shop, chips }: CustomerReviewClientProps) {
   const [language, setLanguage] = useState(defaultLanguage);
   const [rating, setRating] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
@@ -56,7 +55,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
   const textRef = useRef<HTMLTextAreaElement>(null);
   const didRevealDraft = useRef(false);
 
-  const copy = COPY[language];
+  const copy = COPY;
   const hasDraft = draftText.trim().length > 0;
   const isReady = rating > 0 && selected.length >= MIN_CHIPS;
   const atLimit = selected.length >= MAX_CHIPS;
@@ -201,7 +200,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
             : copy.hintMore(Math.max(MIN_CHIPS - selected.length, 1));
 
   return (
-    <div lang={language === "hi" ? "hi" : "en"} className="review-surface min-h-dvh bg-white text-review-ink">
+    <div className="review-surface min-h-dvh bg-white text-review-ink">
       <main className="mx-auto w-full max-w-[28rem] px-5 pb-44 pt-5">
         <header className="flex items-center gap-3">
           {shop.logoUrl ? (
@@ -248,7 +247,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
 
         <fieldset className="mt-5 border-t border-review-line pt-5 text-center">
           <legend className="contents">
-            <h2 className="text-lg font-medium">{headlines[language]}</h2>
+            <h2 className="text-lg font-medium">{headline}</h2>
           </legend>
           <div className="mt-3 flex justify-center">
             {[1, 2, 3, 4, 5].map((value) => (
@@ -300,7 +299,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
                 >
                   <input type="checkbox" checked={isSelected} disabled={isDisabled} onChange={() => toggleChip(chip.id)} className="sr-only" />
                   {isSelected && <Check aria-hidden className="size-4" strokeWidth={2.5} />}
-                  {language === "hi" ? hindiChip(chip.label) : chip.label}
+                  {chip.label}
                 </label>
               );
             })}
@@ -325,6 +324,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
             </div>
             <textarea
               id="draft"
+              lang={language === "hi" ? "hi" : "en"}
               ref={textRef}
               value={draftText}
               maxLength={2000}

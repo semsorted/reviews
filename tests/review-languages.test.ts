@@ -4,7 +4,7 @@ import { hindiChip } from "@/lib/reviews/chip-hindi";
 import { GENERIC_CHIPS, SHOP_TYPES } from "@/lib/reviews/catalog";
 import { writeInstantDraft } from "@/lib/reviews/instant-draft";
 
-describe("Hindi review page", () => {
+describe("review language", () => {
   it("has a Hindi word for every ready-made chip", () => {
     const labels = new Set([...GENERIC_CHIPS, ...SHOP_TYPES.flatMap((type) => type.chips)]);
     const missing = [...labels].filter((label) => !/[ऀ-ॿ]/.test(hindiChip(label)));
@@ -26,6 +26,12 @@ describe("Hindi review page", () => {
   });
 
   it("never tells a customer the shop itself reads the private message", () => {
-    for (const copy of Object.values(COPY)) expect(`${copy.privateTitle} ${copy.privateText} ${copy.privateSent}`).toContain("Semsorted");
+    expect(`${COPY.privateTitle} ${COPY.privateText} ${COPY.privateSent}`).toContain("Semsorted");
+  });
+
+  it("keeps all page text in English", () => {
+    const text = Object.values(COPY).map((value) => (typeof value === "function" ? value(2, 4) : String(value))).join(" ");
+    expect(text).not.toMatch(/[\u0900-\u097f]/);
+    expect(text).not.toMatch(/chunein|karein|batayein/);
   });
 });

@@ -73,11 +73,7 @@ export default async function CustomerReviewPage(props: { params: Promise<{ toke
       token={token}
       sessionId={sessionId}
       language={toReviewLanguage(shop.defaultLanguage)}
-      headlines={{
-        en: posterFor(shop.businessCategory, "en", shop.primaryColor).headline,
-        hi: posterFor(shop.businessCategory, "hi", shop.primaryColor).headline,
-        hinglish: posterFor(shop.businessCategory, "hinglish", shop.primaryColor).headline,
-      }}
+      headline={posterFor(shop.businessCategory, "en", shop.primaryColor).headline}
       shop={{
         name: shop.name,
         businessCategory: shop.businessCategory,

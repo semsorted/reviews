@@ -32,18 +32,18 @@ const STAY_TYPES = new Set(["Hotel", "Resort", "Homestay", "PG and hostel"]);
 const TEXT: Record<Language, { line: string; cta: string; steps: [string, string, string] }> = {
   en: {
     line: "Your honest review helps other customers and helps us improve.",
-    cta: "Review us on Google",
-    steps: ["Scan this QR", "Tap stars and options", "Copy and post on Google"],
+    cta: "Scan to review us on Google",
+    steps: ["Scan the QR", "Pick stars and options", "Post on Google"],
   },
   hi: {
     line: "आपका सच्चा रिव्यू दूसरे ग्राहकों की मदद करता है और हमें बेहतर बनाता है।",
-    cta: "Google पर रिव्यू दें",
-    steps: ["QR स्कैन करें", "स्टार और विकल्प चुनें", "कॉपी करके Google पर पोस्ट करें"],
+    cta: "स्कैन करके Google पर रिव्यू दें",
+    steps: ["QR स्कैन करें", "स्टार और विकल्प चुनें", "Google पर पोस्ट करें"],
   },
   hinglish: {
     line: "Aapka sachcha review doosre customers ki madad karta hai aur humein behtar banata hai.",
-    cta: "Google par review dein",
-    steps: ["QR scan karein", "Stars aur options chunein", "Copy karke Google par post karein"],
+    cta: "Scan karke Google par review dein",
+    steps: ["QR scan karein", "Stars aur options chunein", "Google par post karein"],
   },
 };
 
