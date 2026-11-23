@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Star } from "lucide-react";
-import { Logo } from "@/components/Logo";
 import { isUuid, publicQrUrl } from "@/lib/admin/api";
 import { requireAdminPage } from "@/lib/auth/guard";
 import { prisma } from "@/lib/prisma";
@@ -9,13 +8,16 @@ import { posterFor } from "@/lib/qr/poster";
 import { generateQrSvg } from "@/lib/qr/generator";
 import { isSubscribed } from "@/lib/subscription";
 import { cn } from "@/lib/utils";
+import { BrandPanel } from "../../../../_components/BrandPanel";
 import { PrintButton } from "../../../../_components/PrintButton";
 
 export const metadata = { title: "Print QR poster" };
 
 const SIZES = { a4: { label: "A4 wall poster", page: "A4" }, a5: { label: "A5 counter card", page: "A5" } } as const;
 
-const nameSize = (name: string) => (name.length <= 18 ? "text-[6.6cqw]" : name.length <= 32 ? "text-[5.2cqw]" : name.length <= 50 ? "text-[4.3cqw]" : "text-[3.6cqw]");
+const nameSize = (name: string) => (name.length <= 18 ? "text-[7.6cqw]" : name.length <= 32 ? "text-[5.6cqw]" : name.length <= 50 ? "text-[4.4cqw]" : "text-[3.6cqw]");
+const headlineSize = (text: string) => (text.length <= 19 ? "text-[9.6cqw]" : text.length <= 26 ? "text-[7.8cqw]" : "text-[7cqw]");
+const POSTER_FONT = { fontFamily: "var(--font-outfit), var(--font-anek), ui-sans-serif, sans-serif" };
 
 export default async function QrPosterPage({ params, searchParams }: { params: Promise<{ id: string; qrId: string }>; searchParams: Promise<{ size?: string | string[] }> }) {
   await requireAdminPage();
@@ -29,19 +31,18 @@ export default async function QrPosterPage({ params, searchParams }: { params: P
       name: true,
       isActive: true,
       publicToken: true,
-      shop: { select: { name: true, businessCategory: true, defaultLanguage: true, logoUrl: true, primaryColor: true, isActive: true, subscriptionEndsAt: true } },
+      shop: { select: { name: true, businessCategory: true, defaultLanguage: true, logoUrl: true, websiteUrl: true, primaryColor: true, surfaceColor: true, accentColor: true, isActive: true, subscriptionEndsAt: true } },
     },
   });
   if (!qr) notFound();
 
   const { shop } = qr;
-  const poster = posterFor(shop.businessCategory, shop.defaultLanguage, shop.primaryColor);
-  const brand = { backgroundColor: poster.background, color: poster.foreground };
+  const poster = posterFor(shop.businessCategory, shop.defaultLanguage, shop.primaryColor, { surface: shop.surfaceColor, accent: shop.accentColor });
   const svg = await generateQrSvg({ url: publicQrUrl(qr.publicToken), margin: 4 });
   const base = `/admin/shops/${id}/qr/${qrId}`;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 print:space-y-0">
       <style>{`@page{size:${SIZES[size].page} portrait;margin:0}`}</style>
       <div className="space-y-4 print:hidden">
         <Link href={`/admin/shops/${id}?tab=manage`} className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-moss hover:text-ink">
@@ -64,51 +65,51 @@ export default async function QrPosterPage({ params, searchParams }: { params: P
         )}
       </div>
 
-      <article data-size={size} lang={poster.lang === "hi" ? "hi" : "en"} className="qr-sheet relative mx-auto flex aspect-[210/297] w-full max-w-[34rem] flex-col justify-between overflow-hidden bg-white px-[7cqw] pb-[4.5cqw] pt-[7cqw] text-[#17191c] shadow-[0_24px_48px_-24px_rgb(6_24_56/0.55)] print:shadow-none">
-        <div>
-          <div className="flex items-center gap-[3cqw]">
-            <span className="relative flex size-[12.5cqw] shrink-0 items-center justify-center overflow-hidden rounded-[3cqw] font-display text-[7cqw] font-semibold" style={brand}>
-              {shop.name.charAt(0).toUpperCase()}
-              {shop.logoUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={shop.logoUrl} alt="" className="absolute inset-0 size-full rounded-[3cqw] border-[0.25cqw] border-[#e3e6ea] bg-white object-contain" />
-              )}
-            </span>
-            <div className="min-w-0">
-              <h1 className={cn("break-words font-display font-semibold leading-[1.05]", nameSize(shop.name))}>{shop.name}</h1>
-              <p className="mt-[0.7cqw] text-[2.9cqw] font-medium leading-tight text-[#5f6368]">{shop.businessCategory}</p>
-            </div>
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,34rem)_minmax(18rem,24rem)] lg:justify-center print:block">
+        <article data-size={size} lang={poster.lang === "hi" ? "hi" : "en"} className="qr-sheet relative mx-auto flex aspect-[210/297] w-full max-w-[34rem] flex-col overflow-hidden shadow-[0_24px_48px_-24px_rgb(6_24_56/0.55)] print:shadow-none" style={{ backgroundColor: poster.page, color: poster.ink }}>
+          <div className="flex h-[46cqw] shrink-0 flex-col items-center px-[7cqw] pt-[5.5cqw] text-center">
+            {shop.logoUrl ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={shop.logoUrl} alt="" className="h-[14cqw] max-w-[46cqw] object-contain" />
+                <h1 className="sr-only">{shop.name}</h1>
+              </>
+            ) : (
+              <h1 className={cn("flex min-h-[12cqw] max-w-full items-center break-words font-semibold leading-[1.05] tracking-[-0.02em]", nameSize(shop.name))} style={POSTER_FONT}>{shop.name}</h1>
+            )}
+            <p className={cn("mt-[2.2cqw] max-w-[84cqw] text-balance font-semibold leading-[1.04] tracking-[-0.03em]", headlineSize(poster.headline))} style={POSTER_FONT}>{poster.headline}</p>
+            <p className="mt-[1.5cqw] max-w-[70cqw] text-balance text-[2.9cqw] font-medium leading-[1.3]" style={{ color: poster.muted }}>{poster.line}</p>
           </div>
-          <p className="mt-[4.5cqw] max-w-[15ch] text-balance font-display text-[10.5cqw] font-semibold leading-[1.02] tracking-[-0.02em]">{poster.headline}</p>
-          <p className="mt-[1.8cqw] max-w-[68cqw] text-[3cqw] leading-[1.3] text-[#5f6368]">{poster.line}</p>
-        </div>
 
-        <div className="flex flex-col items-center rounded-[4.5cqw] px-[3cqw] pb-[2.6cqw] pt-[3.4cqw]" style={brand}>
-          {/* The QR image carries its own 4-module white quiet zone. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={`data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`} alt={`QR code for ${shop.name}`} className="block size-[55cqw] rounded-[2.2cqw] bg-white" />
-          <p className="mt-[2.3cqw] flex flex-wrap items-center justify-center gap-x-[2cqw] gap-y-[0.6cqw] text-center font-display text-[4.1cqw] font-semibold leading-tight">
-            <span aria-hidden className="flex -translate-y-[0.25cqw] gap-[0.5cqw]">
-              {[0, 1, 2, 3, 4].map((star) => <Star key={star} className="size-[3cqw]" />)}
+          <div className="relative mx-[7cqw] flex flex-1 flex-col items-center rounded-t-[43cqw] px-[5cqw] pb-[2.4cqw] pt-[7.5cqw]" style={{ backgroundColor: poster.background, color: poster.foreground }}>
+            <span aria-hidden className="pointer-events-none absolute -inset-x-[1.8cqw] -top-[1.8cqw] bottom-0 rounded-t-[45cqw] border-[0.28cqw] border-b-0" style={{ borderColor: poster.accent }} />
+            <span aria-hidden className="flex gap-[1cqw]" style={{ color: poster.accent }}>
+              {[0, 1, 2, 3, 4].map((star) => <Star key={star} strokeWidth={2.2} className="size-[4cqw]" />)}
             </span>
-            {poster.cta}
-          </p>
-        </div>
+            {/* The QR image carries its own 4-module white quiet zone. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`} alt={`QR code for ${shop.name}`} className="mt-[2cqw] block size-[52cqw] rounded-[3cqw] bg-white" />
+            <p className="mt-[2.4cqw] text-center text-[4.1cqw] font-semibold leading-tight" style={POSTER_FONT}>{poster.cta}</p>
 
-        <ol className="grid grid-cols-3 gap-[3cqw]">
-          {poster.steps.map((step, index) => (
-            <li key={step} className="flex items-center gap-[1.5cqw] text-[2.75cqw] font-semibold leading-[1.15]">
-              <span className="flex size-[5.2cqw] shrink-0 items-center justify-center rounded-full text-[2.9cqw] font-bold" style={brand}>{index + 1}</span>
-              {step}
-            </li>
-          ))}
-        </ol>
+            <ol className="mt-auto grid w-full grid-cols-3" style={POSTER_FONT}>
+              {poster.steps.map((step, index) => (
+                <li key={step} className="flex items-center gap-[1.3cqw] border-l-[0.2cqw] px-[1.4cqw] text-[2.45cqw] font-semibold leading-[1.15] first:border-l-0" style={{ borderColor: `${poster.foreground}33` }}>
+                  <span className="flex size-[4.8cqw] shrink-0 items-center justify-center rounded-full text-[2.6cqw] font-bold" style={{ backgroundColor: poster.accent, color: poster.onAccent }}>{index + 1}</span>
+                  {step}
+                </li>
+              ))}
+            </ol>
+            <p className={cn("mt-[1.7cqw] flex w-full px-[1.4cqw] text-[1.9cqw] font-medium", qr.name === "Main QR" ? "justify-center" : "justify-between")} style={{ color: `${poster.foreground}B3` }}>
+              <span>Powered by Semsorted</span>
+              {qr.name !== "Main QR" && <span>{qr.name}</span>}
+            </p>
+          </div>
+        </article>
 
-        <div className="flex items-center justify-between border-t border-[#e3e6ea] pt-[2cqw] text-[2.4cqw] font-medium text-[#5f6368]">
-          <span className="flex items-center gap-[1.2cqw]">Powered by <Logo className="text-[2.9cqw]" /></span>
-          {qr.name !== "Main QR" && <span className="font-semibold">{qr.name}</span>}
+        <div className="print:hidden">
+          <BrandPanel shopId={id} website={shop.websiteUrl ?? ""} hasLogo={Boolean(shop.logoUrl)} current={{ primary: poster.background, surface: poster.page, accent: poster.accent }} />
         </div>
-      </article>
+      </div>
     </div>
   );
 }

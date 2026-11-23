@@ -205,7 +205,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
         <header className="flex items-center gap-3">
           {shop.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={shop.logoUrl} alt="" className="size-11 shrink-0 rounded-full object-cover" />
+            <img src={shop.logoUrl} alt="" className="size-11 shrink-0 rounded-full border border-review-line bg-white object-contain p-0.5" />
           ) : (
             <div
               aria-hidden

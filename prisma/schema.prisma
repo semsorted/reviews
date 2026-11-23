@@ -58,7 +58,10 @@ model Shop {
   address               String?
   phone                 String?
   logoUrl               String?  @map("logo_url")
+  websiteUrl            String?  @map("website_url")
   primaryColor          String   @default("#4F46E5") @map("primary_color")
+  surfaceColor          String?  @map("surface_color")
+  accentColor           String?  @map("accent_color")
   googleReviewUrl       String   @map("google_review_url")
   verifiedBusinessFacts Json     @default("[]") @map("verified_business_facts")
   defaultLanguage       String   @default("en") @map("default_language")

@@ -9,6 +9,7 @@ const categorySchema = z.string().trim().min(2).max(60);
 const googleUrlSchema = z.string().trim().refine(isAllowedGoogleReviewUrl);
 const logoUrlSchema = z.union([z.literal(""), z.url({ protocol: /^https$/ }).max(2048), z.string().refine(isLogoImage)]);
 const colorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
+const websiteSchema = z.union([z.literal(""), z.url({ protocol: /^https$/ }).max(2048)]);
 const languageSchema = z.enum(["en", "hi", "hinglish"]);
 
 export const ShopCreateSchema = z.object({
@@ -29,6 +30,9 @@ export const ShopUpdateSchema = z
     defaultLanguage: languageSchema,
     logoUrl: logoUrlSchema,
     primaryColor: colorSchema,
+    websiteUrl: websiteSchema,
+    surfaceColor: colorSchema.nullable(),
+    accentColor: colorSchema.nullable(),
     isActive: z.boolean(),
   })
   .partial();

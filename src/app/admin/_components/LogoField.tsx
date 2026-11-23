@@ -5,27 +5,9 @@ import { ImagePlus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toLogoData } from "./logo-image";
 
-const CANVAS = 320;
-const ARTWORK = 288;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
-
-/** Fits any logo inside a white square, so round frames never cut it off. */
-async function toLogoData(file: File) {
-  const image = await createImageBitmap(file);
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = CANVAS;
-  const context = canvas.getContext("2d")!;
-  const scale = Math.min(ARTWORK / image.width, ARTWORK / image.height);
-  const [width, height] = [image.width * scale, image.height * scale];
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, CANVAS, CANVAS);
-  context.imageSmoothingQuality = "high";
-  context.drawImage(image, (CANVAS - width) / 2, (CANVAS - height) / 2, width, height);
-  image.close();
-  const webp = canvas.toDataURL("image/webp", 0.9);
-  return webp.startsWith("data:image/webp") ? webp : canvas.toDataURL("image/jpeg", 0.9);
-}
 
 export function LogoField({ value, onChange }: { value: string; onChange: (logo: string) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -41,11 +23,13 @@ export function LogoField({ value, onChange }: { value: string; onChange: (logo:
     if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) return setError("Choose a PNG, JPG or WebP image.");
     if (file.size > MAX_FILE_BYTES) return setError("Choose an image under 10 MB.");
     setIsReading(true);
+    const preview = URL.createObjectURL(file);
     try {
-      onChange(await toLogoData(file));
+      onChange(await toLogoData(preview));
     } catch {
       setError("This image could not be opened. Try another file.");
     } finally {
+      URL.revokeObjectURL(preview);
       setIsReading(false);
     }
   };
@@ -57,7 +41,7 @@ export function LogoField({ value, onChange }: { value: string; onChange: (logo:
         <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line bg-mist text-moss">
           {value ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={value} alt="Logo preview" className="size-full bg-white object-cover" />
+            <img src={value} alt="Logo preview" className="size-full bg-white object-contain p-1" />
           ) : (
             <ImagePlus aria-hidden className="size-5" />
           )}

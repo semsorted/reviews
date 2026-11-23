@@ -19,8 +19,9 @@ export async function PATCH(request: NextRequest, { params }: Context) {
       data: {
         ...body,
         ...(body.logoUrl !== undefined ? { logoUrl: body.logoUrl || null } : {}),
+        ...(body.websiteUrl !== undefined ? { websiteUrl: body.websiteUrl || null } : {}),
         auditLogs: {
-          create: { userId: admin.id, action: "shop.update", entityType: "Shop", entityId: id, details: body },
+          create: { userId: admin.id, action: "shop.update", entityType: "Shop", entityId: id, details: { ...body, ...(body.logoUrl?.startsWith("data:") ? { logoUrl: "uploaded image" } : {}) } },
         },
       },
       select: { id: true },
