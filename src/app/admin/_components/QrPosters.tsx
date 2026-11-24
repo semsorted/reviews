@@ -1,5 +1,7 @@
+import type { CSSProperties } from "react";
 import { Globe } from "lucide-react";
 import type { posterFor } from "@/lib/qr/poster";
+import { DESIGN_RATIO, type PosterSize } from "@/lib/qr/poster-size";
 import { cn } from "@/lib/utils";
 
 const NAVY = "#0b2447";
@@ -18,6 +20,10 @@ const STAR_POINTS = Array.from({ length: 10 }, (_, index) => {
   return `${(25 + radius * Math.cos(angle)).toFixed(2)},${(25 + radius * Math.sin(angle)).toFixed(2)}`;
 });
 const STAR = STAR_POINTS.join(" ");
+
+/** Print size and shape live in CSS variables, so globals.css can size the sheet on screen and on paper. */
+const sheetStyle = (size: PosterSize, design: keyof typeof DESIGN_RATIO, max: string) =>
+  ({ "--w": `${size.wMm}mm`, "--h": `${size.hMm}mm`, "--ratio": size.hMm / size.wMm, "--r": DESIGN_RATIO[design], "--max": max }) as CSSProperties;
 
 const nameSize = (name: string) => (name.length <= 18 ? "text-[7.6cqw]" : name.length <= 32 ? "text-[5.6cqw]" : name.length <= 50 ? "text-[4.4cqw]" : "text-[3.6cqw]");
 
@@ -65,7 +71,7 @@ function Stars3D({ className }: { className: string }) {
 }
 
 /** The corners sit outside the QR's own 4-module white quiet zone, so scanning is not affected. */
-function ScanFrame({ color, src, alt, qrClass }: { color: string; src: string; alt: string; qrClass: string }) {
+export function ScanFrame({ color, src, alt, qrClass }: { color: string; src: string; alt: string; qrClass: string }) {
   return (
     <div className="relative p-[2.2cqw]">
       {CORNERS.map((corner) => <span key={corner} aria-hidden className={cn("absolute size-[10cqw]", corner)} style={{ borderColor: color }} />)}
@@ -75,11 +81,12 @@ function ScanFrame({ color, src, alt, qrClass }: { color: string; src: string; a
   );
 }
 
-export function NormalPoster({ shopName, qrSrc, qrName }: { shopName: string; qrSrc: string; qrName: string }) {
+export function NormalPoster({ size, shopName, qrSrc, qrName }: { size: PosterSize; shopName: string; qrSrc: string; qrName: string }) {
   return (
-    <article data-size="4x6" data-design="normal" lang="en" className={cn(SHEET, "aspect-[2/3] max-w-[26rem] bg-white")} style={{ color: NAVY, ...POSTER_FONT }}>
+    <article data-size={size.key} data-design="normal" lang="en" className={cn(SHEET, "bg-white")} style={{ ...sheetStyle(size, "normal", "26rem"), color: NAVY, ...POSTER_FONT }}>
       <h1 className="sr-only">{shopName}</h1>
-      {/* cqw padding must sit inside the sheet, because the sheet is the size container. */}
+      {/* cqw values resolve against .qr-frame, which keeps this design's shape on any sheet size. */}
+      <div className="qr-frame">
       <div className="flex flex-1 flex-col items-center justify-between px-[7cqw] pb-[5.5cqw] pt-[7cqw] text-center">
         <div className="flex w-full flex-col items-center">
           <GoogleG className="size-[22cqw]" />
@@ -109,14 +116,16 @@ export function NormalPoster({ shopName, qrSrc, qrName }: { shopName: string; qr
           <span aria-hidden className="h-[0.2cqw] flex-1" style={{ backgroundColor: `${NAVY}40` }} />
         </div>
       </div>
+      </div>
     </article>
   );
 }
 
-export function CustomPoster({ size, shopName, logoUrl, qrSrc, qrName, poster }: { size: "a4" | "a5"; shopName: string; logoUrl: string | null; qrSrc: string; qrName: string; poster: ReturnType<typeof posterFor> }) {
+export function CustomPoster({ size, shopName, logoUrl, qrSrc, qrName, poster }: { size: PosterSize; shopName: string; logoUrl: string | null; qrSrc: string; qrName: string; poster: ReturnType<typeof posterFor> }) {
   const [beforeGoogle, afterGoogle] = poster.cta.split("Google");
   return (
-    <article data-size={size} data-design="custom" lang={poster.lang === "hi" ? "hi" : "en"} className={cn(SHEET, "aspect-[210/297] max-w-[34rem]")} style={{ backgroundColor: poster.page, color: poster.ink }}>
+    <article data-size={size.key} data-design="custom" lang={poster.lang === "hi" ? "hi" : "en"} className={SHEET} style={{ ...sheetStyle(size, "custom", "34rem"), backgroundColor: poster.page, color: poster.ink }}>
+      <div className="qr-frame">
       <div className={cn("flex h-[46cqw] shrink-0 flex-col items-center px-[7cqw] text-center", logoUrl ? "pt-[3.6cqw]" : "pt-[5.5cqw]")}>
         {logoUrl ? (
           <>
@@ -128,24 +137,69 @@ export function CustomPoster({ size, shopName, logoUrl, qrSrc, qrName, poster }:
           <h1 className={cn("flex min-h-[12cqw] max-w-full items-center break-words font-semibold leading-[1.05] tracking-[-0.02em]", nameSize(shopName))} style={POSTER_FONT}>{shopName}</h1>
         )}
         <p className="mt-[2.2cqw] max-w-[86cqw] text-balance text-[8.4cqw] font-semibold leading-[1.04] tracking-[-0.03em]" style={POSTER_FONT}>{poster.title}</p>
+        {poster.motif && <MotifRule motif={poster.motif} />}
         <p className="mt-[1.8cqw] max-w-[78cqw] text-balance text-[3.7cqw] font-medium leading-[1.25]" style={{ color: poster.muted }}>{poster.line}</p>
       </div>
 
       <div className="relative mx-[7cqw] flex flex-1 flex-col items-center rounded-t-[43cqw] px-[5cqw] pb-[2.4cqw] pt-[8cqw]" style={{ backgroundColor: poster.background, color: poster.foreground }}>
+        {poster.motif && <ArchDetail motif={poster.motif} color={poster.accent} />}
         <span aria-hidden className="pointer-events-none absolute -inset-x-[1.8cqw] -top-[1.8cqw] bottom-0 rounded-t-[45cqw] border-[0.28cqw] border-b-0" style={{ borderColor: poster.accent }} />
-        <Stars3D className="h-[5.4cqw] w-auto" />
-        <div className="mt-[1.4cqw]"><ScanFrame color={poster.accent} src={qrSrc} alt={`QR code for ${shopName}`} qrClass="size-[54cqw]" /></div>
-        <p className="mt-[2.4cqw] text-center text-[4.6cqw] font-semibold leading-tight" style={POSTER_FONT}>
-          {beforeGoogle}
-          {/* Google's colors need a white base to stay readable on any brand color. */}
-          <span className="inline-block rounded-[1.1cqw] bg-white px-[1.3cqw] py-[0.15cqw]"><GoogleWord className="font-semibold" /></span>
-          {afterGoogle}
-        </p>
-        <p className={cn("mt-auto flex w-full px-[1.4cqw] text-[1.9cqw] font-medium", qrName === "Main QR" ? "justify-center" : "justify-between")} style={{ color: `${poster.foreground}B3` }}>
+        {/* On a taller sheet the arch grows, and this group stays centred in it. */}
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <Stars3D className="h-[5.4cqw] w-auto" />
+          <div className="mt-[1.4cqw]"><ScanFrame color={poster.accent} src={qrSrc} alt={`QR code for ${shopName}`} qrClass="size-[54cqw]" /></div>
+          <p className="mt-[2.4cqw] text-center text-[4.6cqw] font-semibold leading-tight" style={POSTER_FONT}>
+            {beforeGoogle}
+            {/* Google's colors need a white base to stay readable on any brand color. */}
+            <span className="inline-block rounded-[1.1cqw] bg-white px-[1.3cqw] py-[0.15cqw]"><GoogleWord className="font-semibold" /></span>
+            {afterGoogle}
+          </p>
+        </div>
+        <p className={cn("mt-[2cqw] flex w-full px-[1.4cqw] text-[1.9cqw] font-medium", qrName === "Main QR" ? "justify-center" : "justify-between")} style={{ color: `${poster.foreground}B3` }}>
           <span>Powered by Semsorted</span>
           {qrName !== "Main QR" && <span>{qrName}</span>}
         </p>
       </div>
+      </div>
     </article>
   );
+}
+
+const MOTIF_PATH: Record<string, string[]> = {
+  hanger: ["M12 7a2 2 0 1 0-2-2", "M12 7v2L3 15a1.5 1.5 0 0 0 1 2.7h16a1.5 1.5 0 0 0 1-2.7l-9-6"],
+  cross: ["M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"],
+  utensils: ["M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10", "M17 21V3c-2.5 1.5-3.5 4-3.5 7.5H17"],
+  sparkle: ["M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z", "M19 16v4M17 18h4"],
+};
+
+/** A thin rule with a small line icon of the business type. Nothing is drawn for types without a symbol. */
+function MotifRule({ motif }: { motif: NonNullable<ReturnType<typeof posterFor>["motif"]> }) {
+  return (
+    <div aria-hidden className="mt-[2cqw] flex items-center justify-center gap-[2.4cqw] opacity-80">
+      <span className="h-[0.28cqw] w-[11cqw] bg-current opacity-50" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-[6.4cqw]">
+        {MOTIF_PATH[motif].map((d) => <path key={d} d={d} />)}
+      </svg>
+      <span className="h-[0.28cqw] w-[11cqw] bg-current opacity-50" />
+    </div>
+  );
+}
+
+/** Faint tone-on-tone detail inside the arch: a stitched edge for fashion, tiny crosses for health. */
+function ArchDetail({ motif, color }: { motif: NonNullable<ReturnType<typeof posterFor>["motif"]>; color: string }) {
+  if (motif === "hanger") {
+    return (
+      <svg aria-hidden viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 size-full" fill="none" stroke={color} strokeOpacity=".4" strokeWidth=".5" strokeDasharray="1.6 1.6" vectorEffect="non-scaling-stroke">
+        <rect x="3.5" y="3.5" width="93" height="100" rx="40" vectorEffect="non-scaling-stroke" />
+      </svg>
+    );
+  }
+  if (motif === "cross") {
+    return (
+      <svg aria-hidden viewBox="0 0 100 100" className="pointer-events-none absolute inset-0 size-full" fill="none" stroke={color} strokeOpacity=".16" strokeWidth=".7" strokeLinecap="round">
+        {[[12, 34], [88, 34], [20, 78], [80, 78], [50, 18]].map(([x, y]) => <path key={`${x}${y}`} d={`M${x} ${y - 2.4}v4.8M${x - 2.4} ${y}h4.8`} />)}
+      </svg>
+    );
+  }
+  return null;
 }

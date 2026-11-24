@@ -52,6 +52,11 @@ describe("QR poster template", () => {
     expect(posterFor("Clinic", "en", "#1A73E8").cta).toBe("Scan to review us on Google");
   });
 
+  it("gives fashion, health, food and beauty a quiet symbol and others none", () => {
+    const motif = (type: string) => posterFor(type, "en", "#1A73E8").motif;
+    expect([motif("Clothing store"), motif("Clinic"), motif("Dhaba"), motif("Salon"), motif("Lawyer"), motif("Stamp collector")]).toEqual(["hanger", "cross", "utensils", "sparkle", null, null]);
+  });
+
   it("changes the line under the title for each kind of business", () => {
     const line = (type: string) => posterFor(type, "en", "#1A73E8").line;
     expect(line("Clothing store")).toContain("collection");

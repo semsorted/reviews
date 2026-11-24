@@ -45,3 +45,29 @@ describe("chips and security migration", () => {
     expect(sql()).toContain(`DROP POLICY IF EXISTS "${policy}"`);
   });
 });
+
+describe("table ordering migration", () => {
+  const ordering = () => readFileSync("supabase/migrations/20261127000000_table_ordering.sql", "utf8");
+  const tables = ["ordering_settings", "menu_categories", "menu_items", "dining_tables", "table_sessions", "orders", "order_items", "restaurant_staff", "staff_sessions"];
+
+  it.each(tables)("keeps %s behind RLS with no public access", (table) => {
+    expect(ordering()).toContain(`ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY`);
+    expect(ordering()).toMatch(new RegExp(`REVOKE ALL ON[\\s\\S]*public\\.${table}[\\s\\S]*FROM PUBLIC, anon, authenticated`));
+  });
+
+  it("allows only one open tab per table and unique bill numbers", () => {
+    expect(ordering()).toContain("table_sessions_one_open_per_table ON public.table_sessions (table_id) WHERE status IN ('OPEN', 'BILL_REQUESTED')");
+    expect(ordering()).toContain("UNIQUE (shop_id, bill_fy, bill_no)");
+  });
+
+  it("charges GST only with a GSTIN and has no service charge", () => {
+    expect(ordering()).toContain("CHECK (gst_rate_bp = 0 OR gstin IS NOT NULL)");
+    expect(ordering()).not.toMatch(/service_charge/i);
+  });
+
+  it("never stores staff secrets or cookies in plain text", () => {
+    expect(ordering()).toMatch(/password_hash TEXT NOT NULL/);
+    expect(ordering()).toContain("CHECK (role IN ('OWNER', 'MANAGER', 'KITCHEN', 'WAITER'))");
+    expect(ordering()).toContain("id TEXT PRIMARY KEY CHECK (char_length(id) = 64)");
+  });
+});

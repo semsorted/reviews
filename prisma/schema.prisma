@@ -321,6 +321,164 @@ model PosterCoupon {
   @@map("poster_coupons")
 }
 
+model OrderingSettings {
+  shopId            String    @id @map("shop_id") @db.Uuid
+  isEnabled         Boolean   @default(false) @map("is_enabled")
+  gstin             String?
+  gstRateBp         Int       @default(0) @map("gst_rate_bp")
+  fssai             String?
+  upiUrl            String?   @map("upi_url")
+  billFy            Int       @default(0) @map("bill_fy") @db.SmallInt
+  billSeq           Int       @default(0) @map("bill_seq")
+  version           BigInt    @default(0)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("ordering_settings")
+}
+
+model MenuCategory {
+  id        String   @id @default(uuid()) @db.Uuid
+  shopId    String   @map("shop_id") @db.Uuid
+  name      String
+  nameHi    String?  @map("name_hi")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  items MenuItem[]
+
+  @@index([shopId, sortOrder], map: "menu_categories_shop_idx")
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id          String   @id @default(uuid()) @db.Uuid
+  shopId      String   @map("shop_id") @db.Uuid
+  categoryId  String   @map("category_id") @db.Uuid
+  name        String
+  nameHi      String?  @map("name_hi")
+  pricePaise  Int      @map("price_paise")
+  isVeg       Boolean  @default(true) @map("is_veg")
+  isAvailable Boolean  @default(true) @map("is_available")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  category MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([shopId, categoryId, sortOrder], map: "menu_items_shop_idx")
+  @@map("menu_items")
+}
+
+model DiningTable {
+  id          String   @id @default(uuid()) @db.Uuid
+  shopId      String   @map("shop_id") @db.Uuid
+  label       String
+  publicToken String   @unique @map("public_token")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  sessions TableSession[]
+
+  @@unique([shopId, label])
+  @@map("dining_tables")
+}
+
+model TableSession {
+  id              String    @id @default(uuid()) @db.Uuid
+  shopId          String    @map("shop_id") @db.Uuid
+  tableId         String    @map("table_id") @db.Uuid
+  status          String    @default("OPEN")
+  partySize       Int       @default(1) @map("party_size") @db.SmallInt
+  guestName       String?   @map("guest_name")
+  billFy          Int?      @map("bill_fy") @db.SmallInt
+  billNo          Int?      @map("bill_no")
+  subtotalPaise   Int       @default(0) @map("subtotal_paise")
+  cgstPaise       Int       @default(0) @map("cgst_paise")
+  sgstPaise       Int       @default(0) @map("sgst_paise")
+  roundOffPaise   Int       @default(0) @map("round_off_paise")
+  totalPaise      Int       @default(0) @map("total_paise")
+  gstRateBp       Int       @default(0) @map("gst_rate_bp")
+  paidMethod      String?   @map("paid_method")
+  paidAt          DateTime? @map("paid_at") @db.Timestamptz(3)
+  billRequestedAt DateTime? @map("bill_requested_at") @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  table  DiningTable @relation(fields: [tableId], references: [id], onDelete: Restrict)
+  orders Order[]
+
+  @@unique([shopId, billFy, billNo])
+  @@index([shopId, status, createdAt(sort: Desc)], map: "table_sessions_shop_idx")
+  @@map("table_sessions")
+}
+
+model Order {
+  id             String    @id @default(uuid()) @db.Uuid
+  sessionId      String    @map("session_id") @db.Uuid
+  shopId         String    @map("shop_id") @db.Uuid
+  status         String    @default("RECEIVED")
+  idempotencyKey String    @unique @map("idempotency_key") @db.Uuid
+  note           String?
+  servedAt       DateTime? @map("served_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  session TableSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  items   OrderItem[]
+
+  @@index([shopId, status, createdAt(sort: Desc)], map: "orders_shop_idx")
+  @@index([sessionId], map: "orders_session_idx")
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String  @id @default(uuid()) @db.Uuid
+  orderId    String  @map("order_id") @db.Uuid
+  menuItemId String? @map("menu_item_id") @db.Uuid
+  name       String
+  pricePaise Int     @map("price_paise")
+  isVeg      Boolean @map("is_veg")
+  qty        Int     @db.SmallInt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId], map: "order_items_order_idx")
+  @@map("order_items")
+}
+
+model RestaurantStaff {
+  id           String    @id @default(uuid()) @db.Uuid
+  shopId       String    @map("shop_id") @db.Uuid
+  name         String
+  login        String    @unique
+  passwordHash String    @map("password_hash")
+  role         String
+  isActive     Boolean   @default(true) @map("is_active")
+  failedTries  Int       @default(0) @map("failed_tries")
+  lockedUntil  DateTime? @map("locked_until") @db.Timestamptz(3)
+  lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  sessions StaffSession[]
+
+  @@index([shopId, role], map: "restaurant_staff_shop_idx")
+  @@map("restaurant_staff")
+}
+
+model StaffSession {
+  id        String   @id
+  staffId   String   @map("staff_id") @db.Uuid
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  staff RestaurantStaff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId], map: "staff_sessions_staff_idx")
+  @@map("staff_sessions")
+}
+
 model AuditLog {
   id         String   @id @default(uuid()) @db.Uuid
   userId     String?  @map("user_id") @db.Uuid

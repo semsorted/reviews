@@ -11,20 +11,20 @@ import { cn } from "@/lib/utils";
 
 const BRAND_BAR = [["#1a56db", 3], ["#12a150", 4], ["#e5484d", 2], ["#f5b301", 1]] as const;
 const OPTIONS = [
-  { id: "normal", name: "Normal", text: "Clean white poster, 4×6 inch" },
+  { id: "normal", name: "Normal", text: "Clean white poster" },
   { id: "custom", name: "Custom", text: "Uses the business logo and colors" },
 ] as const;
 
 interface PosterCheckoutProps {
   base: string;
-  size: "a4" | "a5";
+  sizeQuery: string;
   design: PosterDesign;
   prices: Record<PosterDesign, number>;
   coupons: PosterCoupon[];
   payment: { qr: string; payee: string } | null;
 }
 
-export function PosterCheckout({ base, size, design, prices, coupons, payment }: PosterCheckoutProps) {
+export function PosterCheckout({ base, sizeQuery, design, prices, coupons, payment }: PosterCheckoutProps) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -51,7 +51,7 @@ export function PosterCheckout({ base, size, design, prices, coupons, payment }:
   // The poster behind the popup follows the choice, so print always gets the paid design.
   const pick = (next: PosterDesign) => {
     setPicked(next);
-    startSwitch(() => router.replace(`${base}?size=${size}&design=${next}`, { scroll: false }));
+    startSwitch(() => router.replace(`${base}?${sizeQuery}&design=${next}`, { scroll: false }));
   };
 
   const goTo = (next: "choose" | "pay") => {

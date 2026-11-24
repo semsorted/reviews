@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BellRing, ChartNoAxesCombined, LayoutDashboard, LogOut, Plus, Settings, Store } from "lucide-react";
+import { BellRing, ChartNoAxesCombined, LayoutDashboard, LogOut, Plus, Settings, Store, UtensilsCrossed } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import { RenewalPopup, type RenewalItem } from "./RenewalPopup";
@@ -12,6 +12,7 @@ const NAV = [
   { href: "/admin/attention", label: "Needs attention", short: "Attention", icon: BellRing, tint: "bg-g-red text-white" },
   { href: "/admin/tracking", label: "Tracking", short: "Tracking", icon: ChartNoAxesCombined, tint: "bg-g-green text-white" },
   { href: "/admin/shops", label: "Businesses", short: "Business", icon: Store, tint: "bg-g-yellow text-ink" },
+  { href: "/admin/restaurants", label: "Restaurants", short: "Food", icon: UtensilsCrossed, tint: "bg-whatsapp text-white" },
   { href: "/admin/settings", label: "Settings", short: "Settings", icon: Settings, tint: "bg-moss text-white" },
 ];
 
@@ -79,12 +80,12 @@ export function AdminShell({ openCount, renewals, today, children }: { openCount
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>
 
-      <nav aria-label="Admin" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-paper pb-[env(safe-area-inset-bottom)] lg:hidden">
+      <nav aria-label="Admin" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-line bg-paper pb-[env(safe-area-inset-bottom)] lg:hidden">
         {NAV.map((item) => {
           const Icon = item.icon;
           const current = isCurrent(item.href);
           return (
-            <Link key={item.href} href={item.href} aria-current={current ? "page" : undefined} className={cn("relative flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-semibold", current ? "text-ink" : "text-moss")}>
+            <Link key={item.href} href={item.href} aria-current={current ? "page" : undefined} className={cn("relative flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 px-0.5 text-[0.68rem] font-semibold leading-tight", current ? "text-ink" : "text-moss")}>
               <span className={cn("flex size-7 items-center justify-center rounded-lg", current ? item.tint : "bg-mist")}>
                 <Icon aria-hidden className="size-4" />
               </span>

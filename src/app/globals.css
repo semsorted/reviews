@@ -234,10 +234,23 @@ h3 {
   field-sizing: content;
 }
 
+/* Posters set --w, --h, --ratio (sheet height/width), --r (design height/width) and --max inline. */
 .qr-sheet {
-  container-type: inline-size;
+  container-type: size;
+  aspect-ratio: 1 / var(--ratio, 1.5);
+  max-width: min(var(--max, 34rem), calc(85vh / var(--ratio, 1.5)));
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+}
+
+/* Keeps the design's own shape: tall sheets stretch it, wide sheets centre it. */
+.qr-frame {
+  container-type: inline-size;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-self: center;
+  width: min(100cqw, calc(100cqh / var(--r, 1.5)));
 }
 
 @media print {
@@ -259,21 +272,13 @@ h3 {
     padding: 0;
   }
   .qr-sheet {
-    width: 210mm;
+    width: var(--w, 210mm);
     max-width: none;
-    height: 297mm;
+    height: var(--h, 297mm);
     aspect-ratio: auto;
     margin: 0;
     border-radius: 0;
     box-shadow: none;
     break-inside: avoid;
-  }
-  .qr-sheet[data-size="a5"] {
-    width: 148mm;
-    height: 210mm;
-  }
-  .qr-sheet[data-size="4x6"] {
-    width: 4in;
-    height: 6in;
   }
 }

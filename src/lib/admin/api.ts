@@ -48,8 +48,13 @@ export function hasDuplicateLabels(labels: string[]): boolean {
 }
 
 export function publicQrUrl(token: string): string {
+  return publicAppUrl(`/r/${token}`);
+}
+
+/** Full link on the public domain, for anything that gets printed or shared. */
+export function publicAppUrl(path: string): string {
   const base = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/+$/, "");
-  return `${base}/r/${token}`;
+  return `${base}${path}`;
 }
 
 export async function readBody<T extends z.ZodType>(request: NextRequest, schema: T): Promise<z.output<T> | null> {
