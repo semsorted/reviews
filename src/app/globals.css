@@ -245,6 +245,7 @@ h3 {
 
 /* Keeps the design's own shape: tall sheets stretch it, wide sheets centre it. */
 .qr-frame {
+  position: relative;
   container-type: inline-size;
   display: flex;
   flex: 1 1 auto;

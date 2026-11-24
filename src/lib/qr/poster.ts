@@ -1,4 +1,5 @@
 import { SHOP_TYPES } from "@/lib/reviews/catalog";
+import { artFor } from "./poster-art";
 
 type Language = "en" | "hi" | "hinglish";
 type Phrase = Record<Language, string>;
@@ -140,6 +141,7 @@ export function posterFor(category: string, language: string, primaryColor: stri
     // The customer review page uses headline. Printed posters use title.
     headline: headline[lang],
     title: TITLE[lang],
+    art: artFor(category, group),
     line: (TYPE_LINES.get(category) ?? (group ? GROUP_LINES[group] : LINES.other))[lang],
     cta: CTA[lang],
   };
