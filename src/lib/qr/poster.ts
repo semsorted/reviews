@@ -111,17 +111,6 @@ export function groupColor(category: string): string {
   return (group && GROUP_STYLE[group]?.color) || OTHER_STYLE.color;
 }
 
-export type Motif = "hanger" | "cross" | "utensils" | "sparkle" | null;
-const FASHION = new Set(["Clothing store", "Saree and ethnic wear", "Kids wear", "Boutique", "Tailor", "Footwear store", "Jewellery store", "Watch and accessories"]);
-/** One quiet line icon per kind of business. Types without a clear symbol get none. */
-function motifFor(category: string, group: string | null): Motif {
-  if (FASHION.has(category)) return "hanger";
-  if (group === "Health") return "cross";
-  if (group === "Food and drink") return "utensils";
-  if (group === "Beauty and wellness") return "sparkle";
-  return null;
-}
-
 /** Wording stays neutral: Google does not allow asking only for positive reviews. */
 export function posterFor(category: string, language: string, primaryColor: string, brand?: { surface?: string | null; accent?: string | null }) {
   const lang: Language = language === "hi" || language === "hinglish" ? language : "en";
@@ -151,7 +140,6 @@ export function posterFor(category: string, language: string, primaryColor: stri
     // The customer review page uses headline. Printed posters use title.
     headline: headline[lang],
     title: TITLE[lang],
-    motif: motifFor(category, group),
     line: (TYPE_LINES.get(category) ?? (group ? GROUP_LINES[group] : LINES.other))[lang],
     cta: CTA[lang],
   };

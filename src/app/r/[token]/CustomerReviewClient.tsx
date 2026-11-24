@@ -124,6 +124,21 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
   const isLowRating = rating > 0 && rating <= 2;
   const done = finished ?? restoredDone;
 
+  // Coming back from Google (Back button, or the browser restoring this page) shows the thank you screen.
+  useEffect(() => {
+    const show = () => {
+      if (document.visibilityState !== "visible") return;
+      const saved = readReviewDone(tabStorage(), token);
+      if (saved) setFinished(JSON.parse(saved));
+    };
+    window.addEventListener("pageshow", show);
+    document.addEventListener("visibilitychange", show);
+    return () => {
+      window.removeEventListener("pageshow", show);
+      document.removeEventListener("visibilitychange", show);
+    };
+  }, [token]);
+
   useEffect(() => {
     if (!hasDraft || didRevealDraft.current) return;
     didRevealDraft.current = true;
@@ -180,12 +195,12 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
     setFinished(next);
   };
 
-  // Replace removes this page from history, so Back from Google cannot reopen the review form.
   const leaveForGoogle = async (text: string, wasCopied: boolean) => {
-    finish(doneNow("google", text));
+    // The thank you screen is saved now but shown only when the customer comes back from Google.
+    saveReviewDone(tabStorage(), token, doneNow("google", text));
     const events = wasCopied ? [track("copy_click"), track("google_review_click")] : [track("google_review_click")];
     await Promise.race([Promise.allSettled(events), new Promise((resolve) => setTimeout(resolve, 300))]);
-    window.location.replace(shop.googleReviewUrl);
+    window.location.assign(shop.googleReviewUrl);
   };
 
   const applySelection = (nextRating: number, nextSelected: string[], nextLanguage = language) => {
