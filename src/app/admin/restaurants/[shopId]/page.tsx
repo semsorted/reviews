@@ -7,11 +7,14 @@ import { MenuEditor } from "@/components/ordering/manage/MenuEditor";
 import { StaffAccounts } from "@/components/ordering/manage/StaffAccounts";
 import { TablesPanel } from "@/components/ordering/manage/TablesPanel";
 import { SalesReport } from "@/components/ordering/SalesReport";
-import { isUuid, publicAppUrl } from "@/lib/admin/api";
+import { isUuid, publicAppUrl, publicQrUrl } from "@/lib/admin/api";
 import { requireAdminPage } from "@/lib/auth/guard";
 import { menuFor, staffFor, tablesFor } from "@/lib/ordering/staff-page";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
+import { ChipManager } from "../../_components/ChipManager";
+import { QrManager } from "../../_components/QrManager";
+import { ShopForm } from "../../_components/ShopForm";
 import { Panel } from "../../_components/TrackingBlocks";
 
 export const metadata = { title: "Restaurant" };
@@ -22,6 +25,7 @@ const TABS = [
   { id: "staff", label: "Staff", icon: Users },
   { id: "bill", label: "Bill", icon: ReceiptIndianRupee },
   { id: "sales", label: "Sales", icon: ChartNoAxesColumn },
+  { id: "review", label: "Review QR and details", icon: QrCode },
 ] as const;
 
 export default async function RestaurantPage({ params, searchParams }: { params: Promise<{ shopId: string }>; searchParams: Promise<{ tab?: string | string[] }> }) {
@@ -70,7 +74,7 @@ export default async function RestaurantPage({ params, searchParams }: { params:
         <div className="min-w-0">
           <p className="text-sm font-medium text-moss">{shop.businessCategory}</p>
           <h1 className="mt-1 break-words text-[clamp(2.25rem,4vw,3rem)] font-semibold leading-none">{shop.name}</h1>
-          <Link href={`/admin/shops/${shop.id}?tab=manage`} className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-pine hover:underline">
+          <Link href={`${base}?tab=review`} className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-pine hover:underline">
             <QrCode aria-hidden className="size-4" /> Review QR and poster
           </Link>
         </div>
@@ -109,6 +113,31 @@ export default async function RestaurantPage({ params, searchParams }: { params:
         <BillSettings saveUrl={apiBase} bill={{ gstin: settings.gstin ?? "", gstRateBp: settings.gstRateBp, fssai: settings.fssai ?? "", upiUrl: settings.upiUrl ?? "" }} />
       )}
       {tab === "sales" && <SalesReport shopId={shop.id} />}
+      {tab === "review" && <ReviewSection shopId={shop.id} />}
+    </div>
+  );
+}
+
+/** The restaurant's Google review QR, chips and business details, so everything for one restaurant lives on this page. */
+async function ReviewSection({ shopId }: { shopId: string }) {
+  const shop = await prisma.shop.findUniqueOrThrow({
+    where: { id: shopId },
+    select: {
+      id: true, name: true, businessCategory: true, googleReviewUrl: true, defaultLanguage: true, logoUrl: true, primaryColor: true, surfaceColor: true, accentColor: true, isActive: true,
+      qrCodes: { orderBy: { createdAt: "asc" }, select: { id: true, name: true, publicToken: true, scanCount: true, isActive: true } },
+      chips: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true, label: true, isActive: true } },
+    },
+  });
+  return (
+    <div className="grid gap-10 rounded-2xl bg-paper p-5 lg:grid-cols-[minmax(0,1fr)_22rem] lg:p-6">
+      <div className="min-w-0 space-y-10">
+        <QrManager shopId={shop.id} qrCodes={shop.qrCodes.map((qr) => ({ id: qr.id, name: qr.name, url: publicQrUrl(qr.publicToken), scanCount: qr.scanCount, isActive: qr.isActive }))} />
+        <ChipManager shopId={shop.id} shopType={shop.businessCategory} chips={shop.chips} />
+      </div>
+      <aside aria-labelledby="details-title">
+        <h2 id="details-title" className="mb-4 text-2xl font-semibold">Restaurant details</h2>
+        <ShopForm shop={{ ...shop, logoUrl: shop.logoUrl ?? "" }} />
+      </aside>
     </div>
   );
 }

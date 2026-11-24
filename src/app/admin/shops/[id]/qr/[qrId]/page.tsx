@@ -54,6 +54,8 @@ export default async function QrPosterPage({ params, searchParams }: { params: P
     prisma.posterCoupon.findMany({ where: { isActive: true }, select: { code: true, amountOff: true } }),
   ]);
   if (!qr) notFound();
+  // Restaurants keep everything on their own page, so "back" goes there.
+  const isRestaurant = Boolean(await prisma.orderingSettings.findUnique({ where: { shopId: id }, select: { shopId: true } }));
 
   const { shop } = qr;
   const poster = posterFor(shop.businessCategory, shop.defaultLanguage, shop.primaryColor, { surface: shop.surfaceColor, accent: shop.accentColor });
@@ -72,7 +74,7 @@ export default async function QrPosterPage({ params, searchParams }: { params: P
     <div className="space-y-5 print:space-y-0">
       <style>{`@page{size:${size.wMm}mm ${size.hMm}mm;margin:0}`}</style>
       <div className="space-y-4 print:hidden">
-        <Link href={`/admin/shops/${id}?tab=manage`} className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-moss hover:text-ink">
+        <Link href={isRestaurant ? `/admin/restaurants/${id}?tab=review` : `/admin/shops/${id}?tab=manage`} className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-moss hover:text-ink">
           <ArrowLeft aria-hidden className="size-4" /> {shop.name}
         </Link>
         <div className="flex flex-wrap items-center justify-between gap-3">

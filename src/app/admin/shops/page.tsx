@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { prisma } from "@/lib/prisma";
 import { getOverview } from "@/lib/admin/tracking";
 import { requireAdminPage } from "@/lib/auth/guard";
 import { ShopGrid } from "../_components/ShopGrid";
@@ -10,7 +11,10 @@ export const metadata = { title: "Businesses" };
 
 export default async function ShopsPage() {
   await requireAdminPage();
-  const { shops } = await getOverview("all");
+  const [overview, restaurants] = await Promise.all([getOverview("all"), prisma.orderingSettings.findMany({ select: { shopId: true } })]);
+  // Restaurants have their own section, with their review QR and poster inside it.
+  const restaurantIds = new Set(restaurants.map((row) => row.shopId));
+  const shops = overview.shops.filter((shop) => !restaurantIds.has(shop.id));
 
   return (
     <div className="space-y-5">

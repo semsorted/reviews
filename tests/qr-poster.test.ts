@@ -52,9 +52,11 @@ describe("QR poster template", () => {
     expect(posterFor("Clinic", "en", "#1A73E8").cta).toBe("Scan to review us on Google");
   });
 
-  it("picks background drawings by business type and none for the rest", () => {
+  it("gives every business type background drawings that suit it", () => {
     const art = (type: string) => posterFor(type, "en", "#1A73E8").art;
-    expect([art("Clothing store"), art("Clinic"), art("Dhaba"), art("Salon"), art("Lawyer"), art("Stamp collector")]).toEqual(["fashion", "clinic", "food", "beauty", null, null]);
+    expect([art("Clothing store"), art("Clinic"), art("Dhaba"), art("Salon"), art("School"), art("Mobile shop"), art("Grocery store"), art("Car service centre"), art("Plumber"), art("Lawyer"), art("Hotel")]).toEqual(["fashion", "clinic", "food", "beauty", "education", "tech", "retail", "auto", "home", "professional", "stay"]);
+    expect(art("Stamp collector")).toBe("general");
+    for (const type of SHOP_TYPES) expect(art(type.label)).toBeTruthy();
   });
 
   it("changes the line under the title for each kind of business", () => {
