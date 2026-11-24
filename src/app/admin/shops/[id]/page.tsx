@@ -208,6 +208,8 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
                 defaultLanguage: shop.defaultLanguage,
                 logoUrl: shop.logoUrl ?? "",
                 primaryColor: shop.primaryColor,
+                surfaceColor: shop.surfaceColor,
+                accentColor: shop.accentColor,
                 isActive: shop.isActive,
               }}
             />

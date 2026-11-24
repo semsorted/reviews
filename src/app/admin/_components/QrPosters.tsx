@@ -1,4 +1,4 @@
-import { Globe, Star } from "lucide-react";
+import { Globe } from "lucide-react";
 import type { posterFor } from "@/lib/qr/poster";
 import { cn } from "@/lib/utils";
 
@@ -133,9 +133,7 @@ export function CustomPoster({ size, shopName, logoUrl, qrSrc, qrName, poster }:
 
       <div className="relative mx-[7cqw] flex flex-1 flex-col items-center rounded-t-[43cqw] px-[5cqw] pb-[2.4cqw] pt-[8cqw]" style={{ backgroundColor: poster.background, color: poster.foreground }}>
         <span aria-hidden className="pointer-events-none absolute -inset-x-[1.8cqw] -top-[1.8cqw] bottom-0 rounded-t-[45cqw] border-[0.28cqw] border-b-0" style={{ borderColor: poster.accent }} />
-        <span aria-hidden className="flex gap-[1cqw]" style={{ color: poster.accent }}>
-          {[0, 1, 2, 3, 4].map((star) => <Star key={star} strokeWidth={2.2} className="size-[4cqw]" />)}
-        </span>
+        <Stars3D className="h-[5.4cqw] w-auto" />
         <div className="mt-[1.4cqw]"><ScanFrame color={poster.accent} src={qrSrc} alt={`QR code for ${shopName}`} qrClass="size-[54cqw]" /></div>
         <p className="mt-[2.4cqw] text-center text-[4.6cqw] font-semibold leading-tight" style={POSTER_FONT}>
           {beforeGoogle}

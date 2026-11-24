@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { BrandColors } from "@/lib/brand/extract";
 import { groupColor } from "@/lib/qr/poster";
 import { chipsForShopType } from "@/lib/reviews/catalog";
 import { MAX_ACTIVE_CHIPS, MIN_CHIPS } from "@/lib/reviews/rules";
@@ -23,6 +24,8 @@ export interface ShopFormValues {
   defaultLanguage: string;
   logoUrl: string;
   primaryColor: string;
+  surfaceColor: string | null;
+  accentColor: string | null;
   isActive?: boolean;
 }
 
@@ -33,6 +36,8 @@ const EMPTY: ShopFormValues = {
   defaultLanguage: "en",
   logoUrl: "",
   primaryColor: "#1A73E8",
+  surfaceColor: null,
+  accentColor: null,
 };
 
 export function ShopForm({ shop }: { shop?: ShopFormValues }) {
@@ -45,6 +50,15 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
   const [saved, setSaved] = useState(false);
   const [linkCheck, setLinkCheck] = useState<LinkCheck>("idle");
   const [savedLink, setSavedLink] = useState(shop?.googleReviewUrl ?? "");
+
+  const setLogo = (logoUrl: string, colors: BrandColors | null) => {
+    setSaved(false);
+    setValues((current) => ({
+      ...current,
+      logoUrl,
+      ...(colors ? { primaryColor: colors.primary, surfaceColor: colors.surface, accentColor: colors.accent } : {}),
+    }));
+  };
 
   const update = (key: keyof ShopFormValues, value: string) => {
     setSaved(false);
@@ -102,7 +116,9 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
       googleReviewUrl: values.googleReviewUrl,
       defaultLanguage: values.defaultLanguage,
       logoUrl: values.logoUrl,
-      primaryColor: values.primaryColor,
+      primaryColor: values.primaryColor.toUpperCase(),
+      surfaceColor: values.surfaceColor,
+      accentColor: values.accentColor,
     };
     const result = shop
       ? await adminRequest(`/api/admin/shops/${shop.id}`, "PATCH", details)
@@ -154,7 +170,7 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
             <Label htmlFor="name">{values.businessCategory} name</Label>
             <Input id="name" required minLength={2} maxLength={80} value={values.name} onChange={(e) => update("name", e.target.value)} />
           </div>
-          <LogoField value={values.logoUrl} onChange={(logo) => update("logoUrl", logo)} />
+          <LogoField value={values.logoUrl} onChange={setLogo} />
           <GoogleLinkField
             value={values.googleReviewUrl}
             name={values.name}

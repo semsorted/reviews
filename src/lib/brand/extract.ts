@@ -5,7 +5,9 @@ export interface BrandColors {
 }
 
 type Lch = { l: number; c: number; h: number };
-type Seen = Lch & { hex: string; score: number; background: number };
+/** How often a color appears, and how much of that is as a background. */
+export type ColorCount = { hex: string; score: number; background: number };
+type Seen = Lch & ColorCount;
 
 const COLOR = /#[0-9a-f]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)|oklch\([^)]*\)/i;
 const STATUS = /error|danger|destructive|warning|success|info|whatsapp|facebook|instagram|twitter|youtube|linkedin/i;
@@ -66,10 +68,10 @@ export function extractColors(html: string, css: string): BrandColors | null {
   const inline = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)].map((m) => m[1]).join("\n");
   const text = `${css}\n${inline}`;
   const tokens = new Map([...text.matchAll(/(--[\w-]+)\s*:\s*([^;{}]+)/g)].map((m) => [m[1], m[2].trim()]));
-  const seen = new Map<string, Seen>();
+  const seen = new Map<string, ColorCount>();
   const add = (hex: string | null, score: number, isBackground = false) => {
     if (!hex) return;
-    const item = seen.get(hex) ?? { hex, score: 0, background: 0, ...toOklch(hex) };
+    const item = seen.get(hex) ?? { hex, score: 0, background: 0 };
     item.score += score;
     if (isBackground) item.background += score;
     seen.set(hex, item);
@@ -88,8 +90,12 @@ export function extractColors(html: string, css: string): BrandColors | null {
   const themeTag = [...html.matchAll(/<meta[^>]+>/gi)].map((m) => m[0]).find((tag) => /name=["']theme-color["']/i.test(tag));
   const theme = themeTag ? parseColor(attr(themeTag, "content")) : null;
   add(theme, 40);
+  return pickBrand([...seen.values()], theme);
+}
 
-  const all = [...seen.values()];
+/** Separates main, page background and accent from scored colors. */
+export function pickBrand(counts: ColorCount[], theme: string | null = null): BrandColors | null {
+  const all: Seen[] = counts.map((item) => ({ ...item, ...toOklch(item.hex) }));
   const colored = all.filter((item) => item.c >= 0.035 && item.l >= 0.1 && item.l <= 0.97);
   if (!colored.length) return null;
 
