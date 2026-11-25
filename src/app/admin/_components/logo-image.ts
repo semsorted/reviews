@@ -97,7 +97,9 @@ export function logoPalette(pixels: Pixels): BrandColors | null {
   const main = [...ink].sort((a, b) => b.score - a.score)[0];
   if (!main) return null;
   const brand = pickBrand(ink);
-  return { primary: brand?.primary ?? main.hex, accent: brand?.accent ?? null, surface: bg && toHex(bg) };
+  // Black corners are usually a flattened transparent logo, not a wanted page color.
+  const dark = bg !== null && Math.max(...bg) < 40;
+  return { primary: brand?.primary ?? main.hex, accent: brand?.accent ?? null, surface: bg && !dark ? toHex(bg) : null };
 }
 
 export async function loadImage(source: string): Promise<HTMLImageElement> {

@@ -32,4 +32,10 @@ describe("logo on a colored background", () => {
     expect(palette?.surface).toBe("#5A1428");
     expect(palette?.primary).not.toBe(palette?.surface);
   });
+
+  it("ignores a black background", () => {
+    const { data, width, height } = page();
+    for (let i = 0; i < data.length; i += 4) if (data[i] === 255) data.set([0, 0, 0], i);
+    expect(logoPalette({ data, width, height })?.surface).toBeNull();
+  });
 });
