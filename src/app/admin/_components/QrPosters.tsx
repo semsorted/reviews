@@ -128,7 +128,7 @@ export function CustomPoster({ size, shopName, logoUrl, qrSrc, qrName, poster }:
     <article data-size={size.key} data-design="custom" lang={poster.lang === "hi" ? "hi" : "en"} className={SHEET} style={{ ...sheetStyle(size, "custom", "34rem"), backgroundColor: poster.page, color: poster.ink }}>
       {poster.art && <BackgroundArt art={poster.art} color={poster.background} />}
       <div className="qr-frame">
-      <div className={cn("flex min-h-[46cqw] shrink-0 flex-col items-center px-[7cqw] text-center", logoUrl ? "pt-[3.6cqw]" : "pt-[5.5cqw]")}>
+      <div className={cn("flex min-h-[46cqw] shrink-0 flex-col items-center px-[7cqw] pb-[3.4cqw] text-center", logoUrl ? "pt-[3.6cqw]" : "pt-[5.5cqw]")}>
         {logoUrl ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
