@@ -1,7 +1,9 @@
+import { getAiUsage } from "@/lib/admin/ai-usage";
 import { getOverview } from "@/lib/admin/tracking";
 import { parseRange, percent } from "@/lib/admin/tracking-core";
 import { requireAdminPage } from "@/lib/auth/guard";
 import { ActivityChart } from "../_components/ActivityChart";
+import { AiUsageSection } from "../_components/AiUsageSection";
 import { ShopList } from "../_components/ShopList";
 import { CoverStats, FunnelBars, PageHead, Panel, RangeTabs, RatingBars } from "../_components/TrackingBlocks";
 
@@ -10,7 +12,7 @@ export const metadata = { title: "Tracking" };
 export default async function TrackingPage({ searchParams }: { searchParams: Promise<{ range?: string | string[] }> }) {
   await requireAdminPage();
   const range = parseRange((await searchParams).range);
-  const { shops, totals, rating, daily } = await getOverview(range);
+  const [{ shops, totals, rating, daily }, ai] = await Promise.all([getOverview(range), getAiUsage(range)]);
 
   return (
     <div className="space-y-5">
@@ -33,6 +35,7 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
         <Panel title="Customer journey"><FunnelBars funnel={totals} /></Panel>
         <Panel title="Ratings"><RatingBars ratings={rating.breakdown} /></Panel>
       </div>
+      <AiUsageSection usage={ai} range={range} />
     </div>
   );
 }
