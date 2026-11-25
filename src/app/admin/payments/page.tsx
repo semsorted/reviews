@@ -8,7 +8,7 @@ import { CoverStats, PageHead, Panel, RangeTabs } from "../_components/TrackingB
 export const metadata = { title: "Payments" };
 
 const when = (date: Date) => date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric" });
-const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
+const plural = (count: number, one: string, many = `${one}s`) => `${count} ${count === 1 ? one : many}`;
 const SERIES = [{ key: "amount", name: "Collected", color: "#2a78d6" }];
 
 export default async function PaymentsPage({ searchParams }: { searchParams: Promise<{ range?: string | string[] }> }) {
@@ -24,15 +24,15 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
 
       <CoverStats
         stats={[
-          { label: `Collected in ${thisMonth.label}`, value: formatInr(thisMonth.amount), note: `${plural(thisMonth.added, "business")} added this month`, tone: "green" },
-          { label: `Last time (${lastMonth.label})`, value: formatInr(lastMonth.amount), note: `${plural(lastMonth.added, "business")} added that month`, tone: "blue" },
+          { label: `Collected in ${thisMonth.label}`, value: formatInr(thisMonth.amount), note: `${plural(thisMonth.added, "business", "businesses")} added this month`, tone: "green" },
+          { label: `Last time (${lastMonth.label})`, value: formatInr(lastMonth.amount), note: `${plural(lastMonth.added, "business", "businesses")} added that month`, tone: "blue" },
           {
             label: "Change from last time",
             value: change === null ? (thisMonth.amount > 0 ? "New" : "—") : `${change > 0 ? "+" : ""}${change}%`,
             note: difference === 0 ? "Same as last month" : `${difference > 0 ? "+" : "-"}${formatInr(Math.abs(difference))} vs last month`,
             tone: difference < 0 ? "red" : "deep",
           },
-          { label: "All time", value: formatInr(allTime.amount), note: `${plural(allTime.payments, "payment")} from ${plural(allTime.businesses, "business")}`, tone: "yellow" },
+          { label: "All time", value: formatInr(allTime.amount), note: `${plural(allTime.payments, "payment")} from ${plural(allTime.businesses, "business", "businesses")}`, tone: "yellow" },
         ]}
       />
 
