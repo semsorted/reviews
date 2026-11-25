@@ -63,6 +63,8 @@ describe("isSafeAiDraft", () => {
     ["invented English purchase", "I bought a cake at Sunrise Bakery and the taste was nice.", 5],
     ["invented Hinglish purchase", "Maine Sunrise Bakery se kuch liya tha aur taste theek tha.", 3],
     ["gendered Hindi", "मैं Sunrise Bakery में पढ़ाई करता हूँ। स्वाद अच्छा रहा।", 5],
+    ["gendered Hindi continuing", "मैं Sunrise Bakery में पढ़ाई करता रहा। स्वाद अच्छा रहा।", 5],
+    ["gendered Hinglish continuing", "Main Sunrise Bakery me padhai karti rahi aur taste achha laga.", 5],
     ["gendered Hinglish", "Maine Sunrise Bakery me classes leta tha aur taste achha laga.", 5],
     ["invented Hindi purchase", "मैंने Sunrise Bakery से चीज़ें लीं। स्वाद और सेवा अच्छे लगे।", 5],
   ])("rejects %s", (_name, text, rating) => {

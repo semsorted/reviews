@@ -4,7 +4,7 @@ const LOCAL_CANDIDATES = 40;
 const BLOCKED_TEXT = /https?:|www\.|#|artificial intelligence|\bqr\b|[\u{1F300}-\u{1FAFF}]/iu;
 const LOW_RATING_PRAISE = /\b(great|excellent|amazing|awesome|loved|best|perfect|wonderful|fantastic|badhiya|mast|zabardast|shandaar)\b|शानदार|बढ़िया|बहुत अच्छा|लाजवाब|बेहतरीन/i;
 // First-person verb endings that reveal gender ("karta hoon", "leti thi", "गया था"). The customer's gender is not known.
-const GENDERED = /(?:ता|ती)\s+(?:हूँ|हूं|था|थी)|(?:गया|गई|गयी)\s+(?:था|थी|हूँ|हूं)|रह[ाी]\s+(?:हूँ|हूं)|\b\w+(?:ta|ti)\s+(?:hoon|hu|tha|thi)\b|\b(?:gaya|gayi)\s+(?:tha|thi|hoon|hu)\b|\brah[ai]\s+(?:hoon|hu)\b/i;
+const GENDERED = /(?:ता|ती)\s+(?:हूँ|हूं|था|थी|रह[ाीे])|\b\w+(?:ta|ti)\s+rah[aei]\b|(?:गया|गई|गयी)\s+(?:था|थी|हूँ|हूं)|रह[ाी]\s+(?:हूँ|हूं)|\b\w+(?:ta|ti)\s+(?:hoon|hu|tha|thi)\b|\b(?:gaya|gayi)\s+(?:tha|thi|hoon|hu)\b|\brah[ai]\s+(?:hoon|hu)\b/i;
 const INVENTED_DETAIL = /\b(bought|ate|tried|ordered|purchased|kharida|kharidi|khaya|khayi|liya|mangaya)\b|\bli thi\b|\border kiya\b|खरीदा|ख़रीदा|खरीदी|ख़रीदी|खाया|ऑर्डर किया|मंगाया|(?:^|\s)(?:लिया|ली|लीं)(?=[\s।]|$)/i;
 
 /** The first candidate is always the draft already on the customer's screen. */
