@@ -26,6 +26,8 @@ export interface ShopFormValues {
   primaryColor: string;
   surfaceColor: string | null;
   accentColor: string | null;
+  /** Whole rupees as typed. Left out for businesses that are not sold by QR, such as restaurants. */
+  qrPrice?: string;
   isActive?: boolean;
 }
 
@@ -40,9 +42,9 @@ const EMPTY: ShopFormValues = {
   accentColor: null,
 };
 
-export function ShopForm({ shop }: { shop?: ShopFormValues }) {
+export function ShopForm({ shop, defaultPrice }: { shop?: ShopFormValues; defaultPrice?: number }) {
   const router = useRouter();
-  const [values, setValues] = useState<ShopFormValues>(shop ?? EMPTY);
+  const [values, setValues] = useState<ShopFormValues>(shop ?? { ...EMPTY, qrPrice: defaultPrice === undefined ? undefined : String(defaultPrice) });
   const [chips, setChips] = useState<string[]>([]);
   const [chipDraft, setChipDraft] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -109,6 +111,12 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
       return;
     }
 
+    if (values.qrPrice !== undefined && !/^\d{1,7}$/.test(values.qrPrice)) {
+      setError("Enter the price paid in whole rupees, for example 1999.");
+      document.getElementById("qr-price")?.focus();
+      return;
+    }
+
     setIsSaving(true);
     const details = {
       name: values.name,
@@ -119,6 +127,7 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
       primaryColor: values.primaryColor.toUpperCase(),
       surfaceColor: values.surfaceColor,
       accentColor: values.accentColor,
+      ...(values.qrPrice !== undefined ? { qrPrice: Number(values.qrPrice) } : {}),
     };
     const result = shop
       ? await adminRequest(`/api/admin/shops/${shop.id}`, "PATCH", details)
@@ -185,6 +194,14 @@ export function ShopForm({ shop }: { shop?: ShopFormValues }) {
               setError(null);
             }}
           />
+
+          {values.qrPrice !== undefined && (
+            <div>
+              <Label htmlFor="qr-price">Price paid (₹)</Label>
+              <Input id="qr-price" inputMode="numeric" maxLength={7} value={values.qrPrice} onChange={(e) => update("qrPrice", e.target.value.replace(/\D/g, ""))} />
+              <p className="mt-1 text-sm text-moss">What this business paid after any coupon. It stays as you set it, even if the price in Settings changes later.</p>
+            </div>
+          )}
 
           {!shop && (
             <details className="rounded-xl border border-line bg-paper">

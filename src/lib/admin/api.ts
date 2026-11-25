@@ -11,6 +11,8 @@ const logoUrlSchema = z.union([z.literal(""), z.url({ protocol: /^https$/ }).max
 const colorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
 const websiteSchema = z.union([z.literal(""), z.url({ protocol: /^https$/ }).max(2048)]);
 const languageSchema = z.enum(["en", "hi", "hinglish"]);
+/** What the business paid for its QR, in whole rupees, after any coupon. */
+export const qrPriceSchema = z.number().int().min(0).max(1_000_000);
 
 export const ShopCreateSchema = z.object({
   name: nameSchema,
@@ -22,6 +24,7 @@ export const ShopCreateSchema = z.object({
   surfaceColor: colorSchema.nullable().optional(),
   accentColor: colorSchema.nullable().optional(),
   chips: z.array(chipLabelSchema).min(MIN_CHIPS).max(MAX_ACTIVE_CHIPS),
+  qrPrice: qrPriceSchema.optional(),
 });
 
 export const ShopUpdateSchema = z
@@ -35,6 +38,7 @@ export const ShopUpdateSchema = z
     websiteUrl: websiteSchema,
     surfaceColor: colorSchema.nullable(),
     accentColor: colorSchema.nullable(),
+    qrPrice: qrPriceSchema,
     isActive: z.boolean(),
   })
   .partial();

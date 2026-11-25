@@ -68,6 +68,7 @@ model Shop {
   defaultAiProvider     String   @default("gemini") @map("default_ai_provider")
   isActive              Boolean  @default(true) @map("is_active")
   subscriptionEndsAt    DateTime @default(dbgenerated("(now() + '1 year'::interval)")) @map("subscription_ends_at") @db.Timestamptz(3)
+  qrPrice               Int?     @map("qr_price")
   createdAt             DateTime @default(now()) @map("created_at")
   updatedAt             DateTime @updatedAt @map("updated_at")
 

@@ -5,7 +5,8 @@ import { chartDays, dayKeys, type TrackingRange } from "./tracking-core";
 
 /**
  * Restaurants: the plan payments confirmed on the Plan tab.
- * QR businesses: no payment is recorded for them, so each one counts once at the QR price, on the day it was added.
+ * QR businesses: no payment is recorded for them, so each one counts once at the price saved with it, on the day it was added.
+ * A business without a saved price (should not happen once the migration ran) falls back to the Normal poster price.
  * ponytail: loads every sale and adds up in memory. Move to SQL sums past a few thousand businesses.
  */
 export async function getPayments(range: TrackingRange) {
@@ -16,7 +17,7 @@ export async function getPayments(range: TrackingRange) {
     prisma.orderingSettings.findMany({ where: { isEnabled: true }, select: { shopId: true } }),
     prisma.posterPricing.findUniqueOrThrow({ where: { id: 1 }, select: { normalPrice: true } }),
   ]);
-  const qrShops = await prisma.shop.findMany({ where: { id: { notIn: enabled.map((row) => row.shopId) } }, select: { id: true, name: true, businessCategory: true, createdAt: true } });
+  const qrShops = await prisma.shop.findMany({ where: { id: { notIn: enabled.map((row) => row.shopId) } }, select: { id: true, name: true, businessCategory: true, createdAt: true, qrPrice: true } });
 
   const restaurantSales: Sale[] = payments.map((payment) => ({
     id: payment.id,
@@ -26,7 +27,7 @@ export async function getPayments(range: TrackingRange) {
     amount: payment.amount,
     at: payment.createdAt,
   }));
-  const qrSales: Sale[] = qrShops.map((shop) => ({ id: shop.id, shopId: shop.id, name: shop.name, detail: `QR business · ${shop.businessCategory}`, amount: pricing.normalPrice, at: shop.createdAt }));
+  const qrSales: Sale[] = qrShops.map((shop) => ({ id: shop.id, shopId: shop.id, name: shop.name, detail: `QR business · ${shop.businessCategory}`, amount: shop.qrPrice ?? pricing.normalPrice, at: shop.createdAt }));
 
   const restaurants = buildSection(restaurantSales, months, days);
   const qr = buildSection(qrSales, months, days);

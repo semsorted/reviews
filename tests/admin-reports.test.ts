@@ -100,3 +100,17 @@ describe("buildSection", () => {
     expect(section.businesses).toEqual([]);
   });
 });
+
+import { ShopCreateSchema, ShopUpdateSchema } from "@/lib/admin/api";
+
+describe("QR price on a business", () => {
+  const create = { name: "Sunrise Bakery", businessCategory: "Bakery", googleReviewUrl: "https://g.page/r/abc/review", chips: ["Taste", "Service"] };
+  it("is optional when a business is added, so Settings fills it in", () => {
+    expect(ShopCreateSchema.safeParse(create).success).toBe(true);
+    expect(ShopCreateSchema.safeParse({ ...create, qrPrice: 1749 }).success).toBe(true);
+  });
+  it("takes whole rupees only", () => {
+    for (const qrPrice of [-1, 19.99, "1999", 1_000_001]) expect(ShopUpdateSchema.safeParse({ qrPrice }).success).toBe(false);
+    expect(ShopUpdateSchema.safeParse({ qrPrice: 0 }).success).toBe(true);
+  });
+});

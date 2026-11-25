@@ -37,7 +37,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
       <PaymentSection
         id="pay-qr"
         title="QR businesses"
-        text={`Each QR business counts once at ${formatInr(qrPrice)}, on the day it was added. The price is the Normal poster price in Settings.`}
+        text={`Each business counts once, on the day it was added, at the price saved with it (${formatInr(qrPrice)} is the current Normal poster price). Change one business\u2019s price in its details; a Settings change never touches old ones.`}
         section={qr}
         labels={labels}
         unit={{ one: "business", many: "businesses" }}

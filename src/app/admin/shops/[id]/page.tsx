@@ -210,6 +210,7 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
                 primaryColor: shop.primaryColor,
                 surfaceColor: shop.surfaceColor,
                 accentColor: shop.accentColor,
+                qrPrice: shop.qrPrice === null ? "" : String(shop.qrPrice),
                 isActive: shop.isActive,
               }}
             />
