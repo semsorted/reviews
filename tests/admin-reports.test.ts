@@ -40,3 +40,22 @@ describe("providerKey", () => {
     expect(providerKey("openai")).toBe("other");
   });
 });
+
+import { neuronsFor, quotaMeters } from "@/lib/admin/free-quota";
+
+describe("free quota meters", () => {
+  it("estimates Cloudflare neurons from tokens", () => {
+    expect(neuronsFor(0, 0)).toBe(0);
+    expect(neuronsFor(800, 110)).toBe(44);
+  });
+  it("shows every service, even with no calls", () => {
+    const meters = quotaMeters([]);
+    expect(meters.map((meter) => meter.provider)).toEqual(["groq", "cloudflare", "gemini"]);
+    expect(meters.every((meter) => meter.used === 0 && meter.calls === 0)).toBe(true);
+  });
+  it("adds input and output tokens, and leaves Gemini without a limit", () => {
+    const meters = quotaMeters([{ provider: "groq", calls: 2, input: 1500, output: 200 }, { provider: "gemini", calls: 1, input: 800, output: 100 }]);
+    expect(meters[0]).toMatchObject({ used: 1700, limit: 200_000, calls: 2 });
+    expect(meters[2]).toMatchObject({ used: 900, limit: null });
+  });
+});
