@@ -13,6 +13,7 @@ import { menuFor, staffFor, tablesFor } from "@/lib/ordering/staff-page";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 import { ChipManager } from "../../_components/ChipManager";
+import { DeleteRestaurant } from "../../_components/DeleteRestaurant";
 import { QrManager } from "../../_components/QrManager";
 import { ShopForm } from "../../_components/ShopForm";
 import { Panel } from "../../_components/TrackingBlocks";
@@ -117,6 +118,8 @@ export default async function RestaurantPage({ params, searchParams }: { params:
       {tab === "sales" && <SalesReport shopId={shop.id} />}
       {tab === "plan" && <PlanTab shopId={shop.id} shopName={shop.name} query={search} />}
       {tab === "review" && <ReviewSection shopId={shop.id} />}
+
+      <div className="border-t border-line pt-5"><DeleteRestaurant shopId={shop.id} name={shop.name} /></div>
     </div>
   );
 }
