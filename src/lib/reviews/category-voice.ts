@@ -35,7 +35,7 @@ const FOOD = voice(
   "had a meal here",
   [(s) => `I had a meal at ${s}.`, (s) => `I went to ${s} for a meal.`, (s) => `I had food at ${s}.`],
   [(s) => `Maine ${s} me khana kiya.`, (s) => `Maine ${s} me meal kiya.`, (s) => `${s} me khane ka experience raha.`],
-  [(s) => `मैंने ${s} में भोजन किया।`, (s) => `मैं ${s} में खाने के लिए गया था।`, (s) => `${s} में खाने का अनुभव रहा।`],
+  [(s) => `मैंने ${s} में भोजन किया।`, (s) => `मैंने ${s} में खाना खाया।`, (s) => `${s} में खाने का अनुभव रहा।`],
 );
 const BEAUTY = voice(
   "got a service done here",
@@ -53,7 +53,7 @@ const AUTO = voice(
   "used their service here",
   [(s) => `I used the service at ${s}.`, (s) => `I visited ${s} for my vehicle.`, (s) => `I got my vehicle work done at ${s}.`],
   [(s) => `Maine ${s} ki service use ki.`, (s) => `Maine ${s} me gaadi ke liye visit kiya.`, (s) => `${s} ki service ka experience raha.`],
-  [(s) => `मैंने ${s} की सर्विस इस्तेमाल की।`, (s) => `मैं अपनी गाड़ी के लिए ${s} गया था।`, (s) => `${s} की सर्विस का अनुभव रहा।`],
+  [(s) => `मैंने ${s} की सर्विस इस्तेमाल की।`, (s) => `मैंने अपनी गाड़ी के लिए ${s} की सर्विस ली।`, (s) => `${s} की सर्विस का अनुभव रहा।`],
 );
 const HOME = voice(
   "had work done here",
@@ -76,14 +76,46 @@ const EVENT = voice(
 const STAY = voice(
   "stayed here",
   [(s) => `I stayed at ${s}.`, (s) => `I had a stay at ${s}.`, (s) => `I spent a few days at ${s}.`],
-  [(s) => `Maine ${s} me stay kiya.`, (s) => `${s} me ruka tha.`, (s) => `${s} me stay ka experience raha.`],
-  [(s) => `मैंने ${s} में ठहराव किया।`, (s) => `मैं ${s} में रुका था।`, (s) => `${s} में ठहरने का अनुभव रहा।`],
+  [(s) => `Maine ${s} me stay kiya.`, (s) => `Maine ${s} me kuch din bitaye.`, (s) => `${s} me stay ka experience raha.`],
+  [(s) => `मैंने ${s} में ठहराव किया।`, (s) => `मैंने ${s} में कुछ दिन बिताए।`, (s) => `${s} में ठहरने का अनुभव रहा।`],
 );
 const TIME = voice(
   "spent time here",
   [(s) => `I spent some time at ${s}.`, (s) => `I went to ${s}.`, (s) => `I visited ${s}.`],
   [(s) => `Maine ${s} me time bitaya.`, (s) => `Maine ${s} visit kiya.`, (s) => `${s} me time bitane ka experience raha.`],
   [(s) => `मैंने ${s} में समय बिताया।`, (s) => `मैंने ${s} की विज़िट की।`, (s) => `${s} में समय बिताने का अनुभव रहा।`],
+);
+
+const TAXI = voice(
+  "took a ride with them",
+  [(s) => `I rode with ${s}.`, (s) => `I took a ride with ${s}.`, (s) => `I booked a ride with ${s}.`],
+  [(s) => `Maine ${s} ki cab se safar kiya.`, (s) => `Maine ${s} se ride li.`, (s) => `${s} ke saath safar ka experience raha.`],
+  [(s) => `मैंने ${s} की कैब से सफ़र किया।`, (s) => `मैंने ${s} से राइड ली।`, (s) => `${s} के साथ सफ़र का अनुभव रहा।`],
+);
+const DRIVING = voice(
+  "learned to drive here",
+  [(s) => `I learned to drive at ${s}.`, (s) => `I took driving lessons at ${s}.`, (s) => `I trained at ${s}.`],
+  [(s) => `Maine ${s} se driving seekhi.`, (s) => `Maine ${s} me driving ki classes li.`, (s) => `${s} me driving seekhne ka experience raha.`],
+  [(s) => `मैंने ${s} से ड्राइविंग सीखी।`, (s) => `मैंने ${s} में ड्राइविंग की क्लास की।`, (s) => `${s} में ड्राइविंग सीखने का अनुभव रहा।`],
+  true,
+);
+const SHOWROOM = voice(
+  "visited for a vehicle",
+  [(s) => `I visited ${s} for a vehicle.`, (s) => `I went to ${s} to look at vehicles.`, (s) => `I dealt with ${s} for a vehicle.`],
+  [(s) => `Maine gaadi ke liye ${s} visit kiya.`, (s) => `Maine ${s} me gaadiyan dekhin.`, (s) => `${s} se gaadi ka experience raha.`],
+  [(s) => `मैंने गाड़ी के लिए ${s} की विज़िट की।`, (s) => `मैंने ${s} में गाड़ियाँ देखीं।`, (s) => `${s} से गाड़ी का अनुभव रहा।`],
+);
+const VISIT = voice(
+  "visited here",
+  [(s) => `I visited ${s}.`, (s) => `I stopped by ${s}.`, (s) => `I went to ${s}.`],
+  [(s) => `Maine ${s} visit kiya.`, (s) => `Maine ${s} me visit kiya.`, (s) => `${s} ka experience raha.`],
+  [(s) => `मैंने ${s} की विज़िट की।`, (s) => `मैंने ${s} में विज़िट की।`, (s) => `${s} का अनुभव रहा।`],
+);
+const FOOD_DELIVERED = voice(
+  "had food from here",
+  [(s) => `I had food from ${s}.`, (s) => `I had a meal from ${s}.`, (s) => `I got a meal from ${s}.`],
+  [(s) => `Maine ${s} ka khana khaya.`, (s) => `Maine ${s} se khana mangwaya.`, (s) => `${s} ke khane ka experience raha.`],
+  [(s) => `मैंने ${s} का खाना खाया।`, (s) => `मैंने ${s} से खाना मँगवाया।`, (s) => `${s} के खाने का अनुभव रहा।`],
 );
 
 const GROUP_VOICE: Record<string, Voice> = {
@@ -101,6 +133,12 @@ const TYPE_VOICE = new Map<string, Voice>([
   ...["Clothing store", "Saree and ethnic wear", "Kids wear", "Boutique"].map((type) => [type, CLOTHES] as const),
   ...["Hotel", "Resort", "Homestay", "PG and hostel"].map((type) => [type, STAY] as const),
   ...["Cinema", "Gaming zone"].map((type) => [type, TIME] as const),
+  ["Taxi and cab service", TAXI] as const,
+  ["Driving school", DRIVING] as const,
+  ...["Car showroom", "Bike showroom"].map((type) => [type, SHOWROOM] as const),
+  ...["Cafe", "Bakery", "Sweet shop", "Ice cream parlour", "Juice bar", "Tea stall"].map((type) => [type, VISIT] as const),
+  ["Cloud kitchen", FOOD_DELIVERED] as const,
+  ["Catering service", EVENT] as const,
 ]);
 
 /** Null for a category the catalog does not know, so the generic wording is used. */

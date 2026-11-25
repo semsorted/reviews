@@ -227,6 +227,6 @@ export function writeInstantDraft(input: InstantDraftInput, random: () => number
     }
   }
   // A chip is lower-cased to fit mid-sentence, so a sentence that starts with one needs its capital back.
-  const capital = (line: string) => (/^[a-z][a-z'-]*(?=\s)/.test(line) ? line.charAt(0).toUpperCase() + line.slice(1) : line);
+  const capital = (line: string) => (/^[a-z][a-z'-]*(?=[\s,])/.test(line) ? line.charAt(0).toUpperCase() + line.slice(1) : line);
   return [open(shopName), ...lines.map(capital), close].join(" ");
 }

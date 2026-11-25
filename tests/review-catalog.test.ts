@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { chipLabelSchema, hasDuplicateLabels } from "@/lib/admin/api";
 import { chipsForShopType, GENERIC_CHIPS, isCatalogShopType, SHOP_TYPES } from "@/lib/reviews/catalog";
-import { MAX_ACTIVE_CHIPS, MIN_CHIPS } from "@/lib/reviews/rules";
+import { MAX_ACTIVE_CHIPS } from "@/lib/reviews/rules";
 
 describe("shop type catalog", () => {
   it("covers a broad range of businesses", () => {
@@ -10,7 +10,7 @@ describe("shop type catalog", () => {
   });
 
   it.each(SHOP_TYPES.map((type) => [type.label, type.chips] as const))("%s has valid neutral chips", (_label, chips) => {
-    expect(chips.length).toBeGreaterThanOrEqual(Math.max(MIN_CHIPS, 7));
+    expect(chips.length).toBe(10);
     expect(chips.length).toBeLessThanOrEqual(MAX_ACTIVE_CHIPS);
     expect(hasDuplicateLabels(chips)).toBe(false);
     for (const chip of chips) {

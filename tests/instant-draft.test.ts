@@ -139,3 +139,38 @@ describe("writeInstantDraft", () => {
     expect(writeChipLine("B.L. Sir", { rating: 5, language: "en", category: "Language and spoken English" }, seeded(2))).toContain("B.L. Sir");
   });
 });
+
+import { SHOP_TYPES } from "@/lib/reviews/catalog";
+import { voiceFor } from "@/lib/reviews/category-voice";
+import { GENDERED } from "@/lib/reviews/unique-draft";
+
+describe("wording for every business type", () => {
+  it("never reveals the customer's gender in Hindi or Hinglish", () => {
+    for (const type of SHOP_TYPES) {
+      const voice = voiceFor(type.label);
+      for (const language of ["hi", "hinglish"] as const) for (const line of voice?.open[language] ?? []) expect(GENDERED.test(line("Shop")), `${type.label} ${language}: ${line("Shop")}`).toBe(false);
+    }
+  });
+
+  it("never reveals it in whole drafts either", () => {
+    for (const type of SHOP_TYPES) for (const language of ["hi", "hinglish"] as const) for (let i = 1; i <= 12; i++) {
+      const text = writeInstantDraft({ shopName: "Shop", rating: 5, chips: type.chips.slice(0, 3), language, category: type.label }, seeded(i));
+      expect(GENDERED.test(text), `${type.label} ${language}: ${text}`).toBe(false);
+    }
+  });
+
+  it("describes a taxi ride, driving lessons and a sweet shop visit correctly", () => {
+    const first = (category: string) => writeInstantDraft({ ...input(5), category }, seeded(3));
+    expect(first("Taxi and cab service")).toMatch(/ride|rode/);
+    expect(first("Driving school")).toMatch(/drive|driving|trained/);
+    expect(first("Sweet shop")).toMatch(/visited|stopped by|went to/);
+    expect(first("Sweet shop")).not.toMatch(/meal/);
+  });
+
+  it("starts a sentence with a capital even when a comma follows the first word", () => {
+    for (let i = 1; i <= 80; i++) {
+      const text = writeInstantDraft({ ...input(4, "hinglish", ["Transparency", "Timeliness", "Price"]), category: "Plumber" }, seeded(i));
+      expect(text).not.toMatch(/(^|[.!?] )[a-z]/);
+    }
+  });
+});
