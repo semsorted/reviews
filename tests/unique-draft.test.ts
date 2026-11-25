@@ -42,6 +42,11 @@ describe("isSafeAiDraft", () => {
     expect(isSafeAiDraft("The service at Sunrise Bakery was pleasant and the taste was nice.", 4, shop)).toBe(true);
   });
 
+  it("accepts gender-neutral Hindi and Hinglish", () => {
+    expect(isSafeAiDraft("मैंने Sunrise Bakery में पढ़ाई की। मैं बहुत खुश हूँ।", 5, shop)).toBe(true);
+    expect(isSafeAiDraft("Maine Sunrise Bakery me padhai ki. Timings bilkul theek the.", 5, shop)).toBe(true);
+  });
+
   it("allows the word for in Hindi and an order-related topic", () => {
     expect(isSafeAiDraft("Sunrise Bakery में order accuracy के लिए अनुभव अच्छा रहा।", 4, shop)).toBe(true);
   });
@@ -57,6 +62,8 @@ describe("isSafeAiDraft", () => {
     ["changed shop name", "सनराइज़ बेकरी का स्वाद और सर्विस दोनों का अनुभव अच्छा रहा।", 5],
     ["invented English purchase", "I bought a cake at Sunrise Bakery and the taste was nice.", 5],
     ["invented Hinglish purchase", "Maine Sunrise Bakery se kuch liya tha aur taste theek tha.", 3],
+    ["gendered Hindi", "मैं Sunrise Bakery में पढ़ाई करता हूँ। स्वाद अच्छा रहा।", 5],
+    ["gendered Hinglish", "Maine Sunrise Bakery me classes leta tha aur taste achha laga.", 5],
     ["invented Hindi purchase", "मैंने Sunrise Bakery से चीज़ें लीं। स्वाद और सेवा अच्छे लगे।", 5],
   ])("rejects %s", (_name, text, rating) => {
     expect(isSafeAiDraft(text as string, rating as number, shop)).toBe(false);
