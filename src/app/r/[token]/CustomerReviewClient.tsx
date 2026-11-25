@@ -98,7 +98,13 @@ function DoneScreen({ done, shop, onGoogle }: { done: ReviewDone; shop: Customer
 }
 
 export default function CustomerReviewClient({ token, sessionId, language: defaultLanguage, headline, shop, chips }: CustomerReviewClientProps) {
-  const savedDone = useSyncExternalStore(noSubscription, () => readReviewDone(tabStorage(), token), () => null);
+  // Read once on load. Reading it on every render showed the thank you screen the moment Copy and next saved it.
+  const loadedDone = useRef<string | null | undefined>(undefined);
+  const savedDone = useSyncExternalStore(
+    noSubscription,
+    () => (loadedDone.current === undefined ? (loadedDone.current = readReviewDone(tabStorage(), token)) : loadedDone.current),
+    () => null,
+  );
   const restoredDone = useMemo<ReviewDone | null>(() => (savedDone ? JSON.parse(savedDone) : null), [savedDone]);
   const [finished, setFinished] = useState<ReviewDone | null>(null);
   const [language, setLanguage] = useState(defaultLanguage);
