@@ -71,6 +71,9 @@ describe("parseDraftJson", () => {
     expect(parseDraftJson('```json\n{"draftText":"A fine review text"}\n```').draftText).toBe("A fine review text");
     expect(parseDraftJson('Here you go: {"draftText":"Another fine review"} Thanks').draftText).toBe("Another fine review");
   });
+  it("recovers the review when a quote inside it breaks the JSON", () => {
+    expect(parseDraftJson('{"draftText":"He said "great" teaching at Sunset Cafe, really.","headline":"Great"}').draftText).toBe('He said "great" teaching at Sunset Cafe, really.');
+  });
   it("rejects a reply without JSON", () => {
     expect(() => parseDraftJson("just words")).toThrow();
   });

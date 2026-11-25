@@ -24,7 +24,15 @@ export function parseDraftJson(raw: string) {
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
   if (start < 0 || end <= start) throw new Error("No JSON in model reply");
-  return ReviewDraftOutputSchema.parse(JSON.parse(raw.slice(start, end + 1)));
+  const body = raw.slice(start, end + 1);
+  try {
+    return ReviewDraftOutputSchema.parse(JSON.parse(body));
+  } catch (error) {
+    // Some models leave a quote inside the review unescaped, which breaks the JSON. The review text is still readable.
+    const text = body.match(/"draftText"\s*:\s*"([\s\S]*?)"\s*(?:,\s*"headline"|\})/)?.[1];
+    if (!text) throw error;
+    return ReviewDraftOutputSchema.parse({ draftText: text.replace(/\\"/g, '"') });
+  }
 }
 
 export function chatProvider(id: string): AIProvider | null {
