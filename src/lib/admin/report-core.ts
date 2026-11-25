@@ -25,5 +25,7 @@ export function monthKeys(count: number, now = new Date()): string[] {
 export const monthLabel = (key: string) =>
   new Date(`${key}-15T12:00:00+05:30`).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", month: "short", year: "numeric" });
 
+export const dayLabel = (day: string) => new Date(`${day}T12:00:00+05:30`).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short" });
+
 /** Whole-number change against the earlier amount. Null when there is nothing earlier to compare with. */
 export const changePercent = (current: number, earlier: number): number | null => (earlier > 0 ? Math.round(((current - earlier) / earlier) * 100) : null);
