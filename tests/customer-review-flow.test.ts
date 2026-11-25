@@ -1,3 +1,4 @@
+import { resetPausedProviders } from "@/lib/reviews/ai-draft";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
@@ -110,6 +111,7 @@ beforeEach(() => {
   mocks.draftFindFirst.mockResolvedValue(null);
   mocks.draftUpdateOne.mockResolvedValue({ id: draftId });
   mocks.aiCount.mockResolvedValue(0);
+  resetPausedProviders();
   mocks.aiConfigured.mockReturnValue(true);
   mocks.aiWrite.mockResolvedValue({ draftText: aiText, model: "test-model", inputTokens: 10, outputTokens: 20, latencyMs: 300 });
   mocks.usage.mockResolvedValue(undefined);
@@ -183,7 +185,7 @@ describe("POST /api/review/generate", () => {
     mocks.draftFindMany.mockImplementationOnce(async () => []);
     const data = await (await record(post("/api/review/generate", body))).json();
     expect(mocks.aiWrite).toHaveBeenCalledTimes(1);
-    expect(data).toMatchObject({ text: aiText, source: "gemini" });
+    expect(data).toMatchObject({ text: aiText, source: "ai" });
     expect(mocks.draftCreate.mock.calls[0][0].data).toMatchObject({ provider: "gemini", generatedText: aiText });
     expect(mocks.lock).toHaveBeenCalledTimes(2);
   });
@@ -200,7 +202,7 @@ describe("POST /api/review/generate", () => {
   it("retries once after a temporary Gemini error", async () => {
     mocks.draftFindMany.mockImplementationOnce(async ({ where }) => where.generatedText.in.map((generatedText: string) => ({ generatedText })));
     mocks.aiWrite.mockRejectedValueOnce(new Error('{"error":{"code":503,"message":"high demand"}}'));
-    await expect((await record(post("/api/review/generate", body))).json()).resolves.toMatchObject({ text: aiText, source: "gemini" });
+    await expect((await record(post("/api/review/generate", body))).json()).resolves.toMatchObject({ text: aiText, source: "ai" });
     expect(mocks.aiWrite).toHaveBeenCalledTimes(2);
   });
 
@@ -238,7 +240,7 @@ describe("POST /api/review/generate", () => {
   it("retries once when Gemini invents a detail", async () => {
     mocks.draftFindMany.mockImplementationOnce(async ({ where }) => where.generatedText.in.map((generatedText: string) => ({ generatedText })));
     mocks.aiWrite.mockResolvedValueOnce({ draftText: "Maine Sunset Cafe se kuch liya tha aur taste theek tha.", model: "m", inputTokens: 1, outputTokens: 1, latencyMs: 1 });
-    await expect((await record(post("/api/review/generate", body))).json()).resolves.toMatchObject({ text: aiText, source: "gemini" });
+    await expect((await record(post("/api/review/generate", body))).json()).resolves.toMatchObject({ text: aiText, source: "ai" });
     expect(mocks.aiWrite).toHaveBeenCalledTimes(2);
   });
 

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export type AIProviderId = "openai" | "gemini";
+export type AIProviderId = "openai" | "gemini" | "cloudflare" | "groq" | "openrouter";
 export type ReviewStyle = "short" | "natural" | "detailed";
 export type ReviewLanguage = "en" | "hi" | "hinglish";
 

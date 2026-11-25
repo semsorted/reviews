@@ -22,7 +22,8 @@ export function calculateEstimatedCost(
   inputTokens: number,
   outputTokens: number
 ): number {
-  if (provider === "fallback") {
+  // Free-tier providers (Cloudflare, Groq, OpenRouter) cost nothing; the paid ones are priced below.
+  if (provider !== "gemini" && provider !== "openai") {
     return 0.0;
   }
 

@@ -1,3 +1,4 @@
+import { isPerson, voiceFor } from "@/lib/reviews/category-voice";
 import { GenerateReviewDraftInput, ReviewLanguage, ReviewStyle } from "./provider.interface";
 
 export interface PromptPayload {
@@ -40,15 +41,19 @@ Rules:
 5. Do not mention AI, a QR code, or being asked to leave a review.
 6. Do not mention future plans, recommendations, or whether the customer will return.
 7. Write the business name exactly as given, once, in its original spelling and script. Never translate or transliterate it.
-8. Do not add qualities such as friendly, welcoming, fresh, clean, or tasty unless that word is in a selected topic. Do not say the customer bought, took, ate, tried, ordered, or used anything, in any language. Write only about the selected topics.
+8. Do not add qualities such as friendly, welcoming, fresh, clean, or tasty unless that word is in a selected topic. You may say the one ordinary thing a customer does at this kind of business (the "Activity" line) in simple words such as studied, shopped, had a meal, had a consultation, stayed. Never say bought, ate, tried, ordered, or used a product, and add no item, price, name, or date.
+9. Some topics are a person's name or title, such as "B.L. Sir" or "Dr. Mehta". Write about that person naturally, with the exact name, for example their teaching or approach. If a person and a confidence topic are both selected and the rating is 4 or 5, you may say that person helped build the customer's confidence. Never invent what the person said or did.
+10. In Hindi and Hinglish, never reveal the customer's gender: use "maine", "raha", "achha laga", and avoid endings such as tha/thi, gaya/gayi, leta/leti.
+11. Sound like one real person typing a short review. Vary how sentences start and avoid stock lines such as "Overall, a good experience".
 
 Return only a JSON object: {"draftText":"the review","headline":"a 3-6 word summary"}`;
 
+  const activity = voiceFor(businessCategory)?.hint;
   const userPrompt = `Business: ${shopName}
 Category: ${businessCategory}
-Rating: ${rating} out of 5
+${activity ? `Activity: the customer ${activity}\n` : ""}Rating: ${rating} out of 5
 ${rating <= 2 ? "Topics the customer wants improved:" : "Topics selected by the customer:"}
-${chips.map((chip) => `- ${chip}`).join("\n")}
+${chips.map((chip) => `- ${chip}${isPerson(chip) ? " (a person)" : ""}`).join("\n")}
 
 Tone: ${toneFor(rating)}
 Length: ${STYLE_GUIDELINES[style]}

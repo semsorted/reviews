@@ -1,7 +1,7 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { writeGeminiDraft } from "@/lib/reviews/ai-draft";
+import { writeAiDraft } from "@/lib/reviews/ai-draft";
 import { toReviewLanguage } from "@/lib/reviews/instant-draft";
 import { MAX_CHIPS, MAX_DRAFTS_PER_SESSION, MIN_CHIPS } from "@/lib/reviews/rules";
 import { uuidSchema } from "@/lib/reviews/schema";
@@ -98,15 +98,15 @@ export async function POST(request: NextRequest) {
     const labels = chipIds.map((id) => shop.chips.find((chip) => chip.id === id)!.label);
     const language = pickedLanguage ?? toReviewLanguage(shop.defaultLanguage);
     const owner = { shopId: shop.id, sessionId, rating, customerNotes: `Rating ${rating}: ${labels.join(", ")}`, language };
-    const candidates = localCandidates({ shopName: shop.name, rating, chips: labels, language }, sessionId, variant);
+    const candidates = localCandidates({ shopName: shop.name, rating, chips: labels, language, category: shop.businessCategory }, sessionId, variant);
 
-    let source: "instant" | "gemini" | "repeat" = "instant";
+    let source: "instant" | "ai" | "repeat" = "instant";
     let draft = await claimDraft(owner, candidates, "instant", "instant-writer");
     if (draft === "used") {
-      const ai = await writeGeminiDraft({ shopId: shop.id, sessionId, shopName: shop.name, businessCategory: shop.businessCategory, rating, chips: labels, language });
+      const ai = await writeAiDraft({ shopId: shop.id, sessionId, shopName: shop.name, businessCategory: shop.businessCategory, rating, chips: labels, language });
       if (ai) {
-        draft = await claimDraft(owner, [ai.text], "gemini", ai.model);
-        source = "gemini";
+        draft = await claimDraft(owner, [ai.text], ai.provider, ai.model);
+        source = "ai";
       }
       if (draft === "used") {
         draft = await claimDraft(owner, candidates, "instant", "instant-writer", true);
