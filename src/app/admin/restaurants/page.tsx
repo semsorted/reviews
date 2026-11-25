@@ -4,8 +4,10 @@ import { buttonVariants } from "@/components/ui/button";
 import { SetUpOrdering } from "@/components/ordering/manage/BillSettings";
 import { requireAdminPage } from "@/lib/auth/guard";
 import { prisma } from "@/lib/prisma";
-import { indiaDayKey } from "@/lib/subscription";
+import { formatInr } from "@/lib/poster-pricing";
+import { indiaDayKey, subscriptionInfo } from "@/lib/subscription";
 import { cn } from "@/lib/utils";
+import { DemoRestaurant } from "../_components/DemoRestaurant";
 import { PageHead } from "../_components/TrackingBlocks";
 
 export const metadata = { title: "Restaurants" };
@@ -16,12 +18,14 @@ const plural = (total: number, word: string) => `${total} ${word}${total === 1 ?
 export default async function RestaurantsPage() {
   await requireAdminPage();
   const todayStart = new Date(`${indiaDayKey()}T00:00:00+05:30`);
-  const [shops, settings, tables, staff, today] = await Promise.all([
-    prisma.shop.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, businessCategory: true } }),
+  const monthStart = new Date(`${indiaDayKey().slice(0, 7)}-01T00:00:00+05:30`);
+  const [shops, settings, tables, staff, today, collected] = await Promise.all([
+    prisma.shop.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, slug: true, businessCategory: true, subscriptionEndsAt: true } }),
     prisma.orderingSettings.findMany({ select: { shopId: true, isEnabled: true } }),
     prisma.diningTable.groupBy({ by: ["shopId"], where: { isActive: true }, _count: { _all: true } }),
     prisma.restaurantStaff.groupBy({ by: ["shopId"], where: { isActive: true }, _count: { _all: true } }),
     prisma.tableSession.groupBy({ by: ["shopId"], where: { createdAt: { gte: todayStart } }, _count: { _all: true } }),
+    prisma.shopPayment.aggregate({ where: { createdAt: { gte: monthStart } }, _sum: { amount: true }, _count: true }),
   ]);
   const enabled = new Map(settings.map((row) => [row.shopId, row.isEnabled]));
   const [tableCount, staffCount, todayCount] = [count(tables), count(staff), count(today)];
@@ -40,10 +44,19 @@ export default async function RestaurantsPage() {
         }
       />
 
+      {collected._count > 0 && (
+        <p className="rounded-2xl bg-g-green-tint p-4 font-semibold text-g-green">
+          {formatInr(collected._sum.amount ?? 0)} collected this month from {collected._count} {collected._count === 1 ? "payment" : "payments"}.
+        </p>
+      )}
+
+      <DemoRestaurant exists={shops.some((shop) => shop.slug.startsWith("demo-dhaba"))} />
+
       {restaurants.length ? (
         <ul className="divide-y divide-line overflow-hidden rounded-2xl bg-paper">
           {restaurants.map((shop) => {
             const isOn = enabled.get(shop.id);
+            const plan = subscriptionInfo(shop.subscriptionEndsAt);
             return (
               <li key={shop.id}>
                 <Link href={`/admin/restaurants/${shop.id}`} className="flex min-h-16 items-center gap-3 px-5 py-3 hover:bg-mist">
@@ -53,7 +66,10 @@ export default async function RestaurantsPage() {
                       {shop.businessCategory}. {plural(tableCount.get(shop.id) ?? 0, "table")}, {plural(staffCount.get(shop.id) ?? 0, "staff login")}, {todayCount.get(shop.id) ?? 0} opened today
                     </span>
                   </span>
-                  <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold", isOn ? "bg-g-green-tint text-g-green" : "bg-mist text-moss")}>{isOn ? "Ordering on" : "Off"}</span>
+                  <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold", plan.state === "active" ? "bg-g-green-tint text-g-green" : plan.state === "ending" ? "bg-g-yellow-tint text-ink" : "bg-g-red-tint text-g-red")}>
+                    {plan.state === "expired" ? "Payment due" : plan.state === "ending" ? `${plan.daysLeft} days left` : "Plan active"}
+                  </span>
+                  <span className={cn("hidden shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold sm:inline", isOn ? "bg-g-green-tint text-g-green" : "bg-mist text-moss")}>{isOn ? "Ordering on" : "Off"}</span>
                   <ChevronRight aria-hidden className="size-4 shrink-0 text-moss" />
                 </Link>
               </li>

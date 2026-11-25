@@ -37,12 +37,12 @@ export function formatPaise(paise: number) {
 }
 
 /** The restaurant's own UPI link with this bill's amount and number filled in. */
-export function billUpiUrl(base: string | null | undefined, totalPaise: number, billNo: string): string | null {
+export function billUpiUrl(base: string | null | undefined, totalPaise: number, billNo: string, note = `Bill ${billNo}`): string | null {
   if (!base || upiPayee(base) === null) return null;
   const params = new URLSearchParams(base.slice("upi://pay?".length));
   params.set("am", (totalPaise / 100).toFixed(2));
   params.set("cu", "INR");
-  params.set("tn", `Bill ${billNo}`);
+  params.set("tn", note);
   // Some UPI apps only read the payee address with a plain "@", so keep it unescaped.
   return `upi://pay?${[...params].map(([key, value]) => `${key}=${encodeURIComponent(value).replaceAll("%40", "@")}`).join("&")}`;
 }

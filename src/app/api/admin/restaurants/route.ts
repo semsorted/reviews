@@ -4,6 +4,7 @@ import { conflict, publicQrUrl, readBody } from "@/lib/admin/api";
 import { adminErrorResponse, requireAdmin } from "@/lib/auth/guard";
 import { hashSecret, normalizeLogin, passwordProblem } from "@/lib/ordering/staff-auth";
 import { prisma } from "@/lib/prisma";
+import { TRIAL_DAYS } from "@/lib/restaurant-plans";
 import { chipsForShopType } from "@/lib/reviews/catalog";
 import { isAllowedGoogleReviewUrl, MAX_ACTIVE_CHIPS } from "@/lib/reviews/rules";
 import { generateToken } from "@/lib/utils";
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
           businessCategory: body.businessCategory,
           googleReviewUrl: body.googleReviewUrl,
           ownerId: admin.id,
+          subscriptionEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000),
           slug: `${baseSlug}-${generateToken(6).toLowerCase()}`,
           chips: { create: chipsForShopType(body.businessCategory).slice(0, MAX_ACTIVE_CHIPS).map((label, sortOrder) => ({ label, sortOrder })) },
           qrCodes: { create: { name: "Main QR", publicToken, destinationUrl: publicQrUrl(publicToken) } },

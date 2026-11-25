@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BookOpen, ChartNoAxesColumn, LayoutGrid, QrCode, ReceiptIndianRupee, Users } from "lucide-react";
+import { ArrowLeft, BookOpen, ChartNoAxesColumn, IndianRupee, LayoutGrid, QrCode, ReceiptIndianRupee, Users } from "lucide-react";
 import { BillSettings, OrderingSwitch, SetUpOrdering } from "@/components/ordering/manage/BillSettings";
 import { CopyButton } from "@/components/ordering/manage/CopyButton";
 import { MenuEditor } from "@/components/ordering/manage/MenuEditor";
@@ -16,6 +16,7 @@ import { ChipManager } from "../../_components/ChipManager";
 import { QrManager } from "../../_components/QrManager";
 import { ShopForm } from "../../_components/ShopForm";
 import { Panel } from "../../_components/TrackingBlocks";
+import { PlanTab } from "./PlanTab";
 
 export const metadata = { title: "Restaurant" };
 
@@ -25,10 +26,11 @@ const TABS = [
   { id: "staff", label: "Staff", icon: Users },
   { id: "bill", label: "Bill", icon: ReceiptIndianRupee },
   { id: "sales", label: "Sales", icon: ChartNoAxesColumn },
+  { id: "plan", label: "Plan and payment", icon: IndianRupee },
   { id: "review", label: "Review QR and details", icon: QrCode },
 ] as const;
 
-export default async function RestaurantPage({ params, searchParams }: { params: Promise<{ shopId: string }>; searchParams: Promise<{ tab?: string | string[] }> }) {
+export default async function RestaurantPage({ params, searchParams }: { params: Promise<{ shopId: string }>; searchParams: Promise<{ tab?: string | string[]; plan?: string | string[]; period?: string | string[] }> }) {
   await requireAdminPage();
   const { shopId } = await params;
   if (!isUuid(shopId)) notFound();
@@ -113,6 +115,7 @@ export default async function RestaurantPage({ params, searchParams }: { params:
         <BillSettings saveUrl={apiBase} bill={{ gstin: settings.gstin ?? "", gstRateBp: settings.gstRateBp, fssai: settings.fssai ?? "", upiUrl: settings.upiUrl ?? "" }} />
       )}
       {tab === "sales" && <SalesReport shopId={shop.id} />}
+      {tab === "plan" && <PlanTab shopId={shop.id} shopName={shop.name} query={search} />}
       {tab === "review" && <ReviewSection shopId={shop.id} />}
     </div>
   );

@@ -82,6 +82,7 @@ model Shop {
   aiUsageLogs     AiUsageLog[]
   subscription    Subscription?
   auditLogs       AuditLog[]
+  payments        ShopPayment[]
 
   @@index([ownerId])
   @@index([slug])
@@ -497,4 +498,38 @@ model AuditLog {
   @@index([shopId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model RestaurantPlan {
+  id           String   @id
+  name         String
+  summary      String   @default("")
+  monthlyPrice Int      @map("monthly_price")
+  yearlyPrice  Int      @map("yearly_price")
+  sortOrder    Int      @default(0) @map("sort_order")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("restaurant_plans")
+}
+
+model ShopPayment {
+  id             String   @id @default(uuid()) @db.Uuid
+  receiptNo      BigInt   @unique @default(autoincrement()) @map("receipt_no")
+  shopId         String   @map("shop_id") @db.Uuid
+  planId         String   @map("plan_id")
+  planName       String   @map("plan_name")
+  months         Int
+  amount         Int
+  method         String
+  reference      String?
+  idempotencyKey String   @unique @map("idempotency_key") @db.Uuid
+  periodFrom     DateTime @map("period_from") @db.Timestamptz(3)
+  periodTo       DateTime @map("period_to") @db.Timestamptz(3)
+  createdBy      String?  @map("created_by") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId, createdAt(sort: Desc)], map: "shop_payments_shop_idx")
+  @@map("shop_payments")
 }

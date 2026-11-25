@@ -51,11 +51,14 @@ export function subscriptionInfo(endsAt: Date, now = new Date()): SubscriptionIn
   };
 }
 
-/** An early renewal keeps the unused time. An expired business restarts from today. */
-export function renewedEnd(endsAt: Date, now = new Date()): Date {
+/** Adds paid months. An early payment keeps the unused time. An expired business restarts from today. */
+export function extendedEnd(endsAt: Date, months: number, now = new Date()): Date {
   const next = india(isSubscribed(endsAt, now) ? endsAt : now);
-  const month = next.getUTCMonth();
-  next.setUTCFullYear(next.getUTCFullYear() + 1);
-  if (next.getUTCMonth() !== month) next.setUTCDate(0);
+  const day = next.getUTCDate();
+  next.setUTCDate(1);
+  next.setUTCMonth(next.getUTCMonth() + months);
+  next.setUTCDate(Math.min(day, daysInMonth(next.getUTCFullYear(), next.getUTCMonth())));
   return new Date(next.getTime() - INDIA_OFFSET_MS);
 }
+
+export const renewedEnd = (endsAt: Date, now = new Date()) => extendedEnd(endsAt, 12, now);

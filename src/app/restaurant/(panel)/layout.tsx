@@ -1,5 +1,7 @@
 import { CAN, ROLE_LABEL } from "@/lib/ordering/staff-auth";
 import { requireStaffPage } from "@/lib/ordering/staff-page";
+import { prisma } from "@/lib/prisma";
+import { subscriptionInfo } from "@/lib/subscription";
 import { LogoutButton, PanelNav } from "./PanelChrome";
 
 const TABS = [
@@ -16,6 +18,7 @@ const TABS = [
 /** The restaurant's own panel. Each page also checks the role, since layouts do not re-run on navigation. */
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
   const staff = await requireStaffPage();
+  const plan = subscriptionInfo((await prisma.shop.findUniqueOrThrow({ where: { id: staff.shopId }, select: { subscriptionEndsAt: true } })).subscriptionEndsAt);
   const tabs = TABS.filter((tab) => (tab.roles as readonly string[]).includes(staff.role)).map(({ href, label }) => ({ href, label }));
 
   // Print styles hide this header and nav: they must stay direct children of this outer div.
@@ -32,6 +35,11 @@ export default async function PanelLayout({ children }: { children: React.ReactN
           <LogoutButton />
         </div>
       </header>
+      {plan.state !== "active" && (
+        <p role="status" className={plan.state === "expired" ? "bg-g-red-tint px-4 py-2 text-center text-sm font-semibold text-g-red" : "bg-g-yellow-tint px-4 py-2 text-center text-sm font-semibold text-ink"}>
+          {plan.state === "expired" ? "Your plan has ended. Contact Semsorted to renew so guests can order again." : `Your plan ends ${plan.endsOn} (${plan.daysLeft} ${plan.daysLeft === 1 ? "day" : "days"} left). Contact Semsorted to renew.`}
+        </p>
+      )}
       {tabs.length > 1 && <PanelNav tabs={tabs} />}
       <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
         <div>{children}</div>
