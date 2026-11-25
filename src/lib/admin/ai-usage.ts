@@ -3,7 +3,7 @@ import { FREE_PROVIDER, providerKey } from "./report-core";
 import { chartDays, dayKeys, rangeStart, type TrackingRange } from "./tracking-core";
 
 export type AiDay = { day: string; label: string; free: number; ai: number; byProvider: Record<string, number> };
-export type ProviderRow = { provider: string; calls: number; failed: number; avgMs: number; cost: number };
+export type ProviderRow = { provider: string; calls: number; failed: number; avgMs: number; tokens: number };
 
 const dayLabel = (day: string) => new Date(`${day}T12:00:00+05:30`).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short" });
 
@@ -17,12 +17,12 @@ export async function getAiUsage(range: TrackingRange) {
       FROM public.review_drafts
       WHERE created_at >= ${chartFrom}::timestamptz
       GROUP BY 1, 2`,
-    prisma.$queryRaw<{ provider: string; calls: number; failed: number; avg_ms: number | null; cost: number }[]>`
+    prisma.$queryRaw<{ provider: string; calls: number; failed: number; avg_ms: number | null; tokens: number }[]>`
       SELECT provider,
              COUNT(*) FILTER (WHERE status = 'SUCCESS')::int AS calls,
              COUNT(*) FILTER (WHERE status = 'FAILED')::int AS failed,
              AVG(latency_ms) FILTER (WHERE status = 'SUCCESS')::float AS avg_ms,
-             COALESCE(SUM(estimated_cost), 0)::float AS cost
+             COALESCE(SUM(input_tokens + output_tokens) FILTER (WHERE status = 'SUCCESS'), 0)::int AS tokens
       FROM public.ai_usage_logs
       WHERE created_at >= ${since}::timestamptz AND provider <> 'fallback'
       GROUP BY 1 ORDER BY 2 DESC`,
@@ -40,7 +40,7 @@ export async function getAiUsage(range: TrackingRange) {
     }
     return point;
   });
-  const providers: ProviderRow[] = calls.map((row) => ({ provider: row.provider, calls: row.calls, failed: row.failed, avgMs: Math.round(row.avg_ms ?? 0), cost: row.cost }));
+  const providers: ProviderRow[] = calls.map((row) => ({ provider: row.provider, calls: row.calls, failed: row.failed, avgMs: Math.round(row.avg_ms ?? 0), tokens: row.tokens }));
   // The totals follow the picked period. The chart shows at most the last 90 days.
   const periodDays = days.filter((point) => new Date(`${point.day}T00:00:00+05:30`) >= since);
   const free = periodDays.reduce((sum, point) => sum + point.free, 0);

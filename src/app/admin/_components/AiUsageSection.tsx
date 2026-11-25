@@ -9,12 +9,11 @@ type AiUsage = Awaited<ReturnType<typeof getAiUsage>>;
 const FREE = { key: "free", name: "Free (written on the phone)", color: "#008300" };
 const AI = { key: "ai", name: "AI", color: "#2a78d6" };
 const NAMES: Record<string, string> = Object.fromEntries(PROVIDER_SERIES.map((series) => [series.key, series.name]));
-const usd = (value: number) => (value < 0.0001 ? "Free" : `$${value.toFixed(value < 1 ? 4 : 2)}`);
 
 export function AiUsageSection({ usage, range }: { usage: AiUsage; range: string }) {
   const { days, providers, totals } = usage;
   const all = totals.ai + totals.free;
-  const cost = providers.reduce((sum, row) => sum + row.cost, 0);
+  const tokens = providers.reduce((sum, row) => sum + row.tokens, 0);
   const calls = providers.reduce((sum, row) => sum + row.calls, 0);
   const failed = providers.reduce((sum, row) => sum + row.failed, 0);
 
@@ -32,7 +31,7 @@ export function AiUsageSection({ usage, range }: { usage: AiUsage; range: string
           { label: "AI reviews", value: totals.ai, note: `${percent(totals.ai, all)}% of ${all} reviews`, tone: "blue" },
           { label: "Free reviews", value: totals.free, note: `${percent(totals.free, all)}% of ${all} reviews`, tone: "green" },
           { label: "AI calls that worked", value: calls, note: failed ? `${failed} failed and moved to the next service` : "None failed", tone: "deep" },
-          { label: "AI cost", value: usd(cost), note: "Estimate from published prices", tone: "yellow" },
+          { label: "Tokens used", value: tokens.toLocaleString("en-IN"), note: "All on free plans", tone: "yellow" },
         ]}
       />
 
@@ -68,7 +67,7 @@ export function AiUsageSection({ usage, range }: { usage: AiUsage; range: string
                   <th className="py-2 pr-3 text-right font-medium">Worked</th>
                   <th className="py-2 pr-3 text-right font-medium">Failed</th>
                   <th className="py-2 pr-3 text-right font-medium">Average speed</th>
-                  <th className="py-2 text-right font-medium">Estimated cost</th>
+                  <th className="py-2 text-right font-medium">Tokens used</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -78,7 +77,7 @@ export function AiUsageSection({ usage, range }: { usage: AiUsage; range: string
                     <td className="py-2.5 pr-3 text-right">{row.calls}</td>
                     <td className="py-2.5 pr-3 text-right">{row.failed}</td>
                     <td className="py-2.5 pr-3 text-right">{row.avgMs ? `${(row.avgMs / 1000).toFixed(1)} s` : "—"}</td>
-                    <td className="py-2.5 text-right">{usd(row.cost)}</td>
+                    <td className="py-2.5 text-right">{row.tokens.toLocaleString("en-IN")}</td>
                   </tr>
                 ))}
               </tbody>
