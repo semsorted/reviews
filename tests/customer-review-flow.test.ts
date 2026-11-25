@@ -36,7 +36,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     qrCode: { findUnique: mocks.qrFind },
     reviewSession: { findUnique: mocks.sessionFind },
-    reviewDraft: { updateMany: mocks.draftUpdate },
+    reviewDraft: { updateMany: mocks.draftUpdate, findMany: mocks.draftFindMany },
     analyticsEvent: { create: mocks.eventCreate, count: mocks.eventCount },
     aiUsageLog: { count: mocks.aiCount },
     $transaction: (work: (tx: unknown) => unknown) =>
@@ -177,6 +177,28 @@ describe("POST /api/review/generate", () => {
     await record(post("/api/review/generate", body));
     expect(mocks.draftUpdateOne).toHaveBeenCalledWith(expect.objectContaining({ where: { id: draftId } }));
     expect(mocks.draftCreate).not.toHaveBeenCalled();
+  });
+
+  it("asks AI first on Change wording and shows it the shop's latest reviews", async () => {
+    mocks.draftFindMany.mockImplementationOnce(async () => [{ generatedText: "an older review" }]);
+    mocks.draftFindMany.mockImplementationOnce(async () => []);
+    const data = await (await record(post("/api/review/generate", { ...body, ai: true }))).json();
+    expect(mocks.aiWrite).toHaveBeenCalledTimes(1);
+    expect(mocks.aiWrite.mock.calls[0][0].avoid).toEqual(["an older review"]);
+    expect(data).toMatchObject({ text: aiText, source: "ai" });
+  });
+
+  it("falls back to the local writer when AI fails on Change wording", async () => {
+    mocks.draftFindMany.mockImplementationOnce(async () => []);
+    mocks.aiWrite.mockRejectedValue(new Error("boom"));
+    const data = await (await record(post("/api/review/generate", { ...body, ai: true }))).json();
+    expect(data).toMatchObject({ source: "instant" });
+    expect(mocks.aiWrite).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not call AI for a normal draft", async () => {
+    await record(post("/api/review/generate", body));
+    expect(mocks.aiWrite).not.toHaveBeenCalled();
   });
 
   it("uses Gemini only when every local review is already used", async () => {

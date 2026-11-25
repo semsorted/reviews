@@ -13,6 +13,8 @@ const RecordDraftSchema = z.object({
   sessionId: uuidSchema,
   rating: z.number().int().min(1).max(5),
   variant: z.number().int().min(0).max(999).default(0),
+  /** "Change wording": ask an AI for a fresh review before falling back to the local writer. */
+  ai: z.boolean().optional(),
   language: z.enum(["en", "hi", "hinglish"]).optional(),
   chipIds: z
     .array(uuidSchema)
@@ -60,7 +62,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Please choose a rating and 2 to 4 options." }, { status: 400 });
   }
-  const { token, sessionId, rating, variant, chipIds, language: pickedLanguage } = parsed.data;
+  const { token, sessionId, rating, variant, chipIds, language: pickedLanguage, ai: wantsAi } = parsed.data;
 
   try {
     const [qr, session] = await Promise.all([
@@ -100,10 +102,26 @@ export async function POST(request: NextRequest) {
     const owner = { shopId: shop.id, sessionId, rating, customerNotes: `Rating ${rating}: ${labels.join(", ")}`, language };
     const candidates = localCandidates({ shopName: shop.name, rating, chips: labels, language, category: shop.businessCategory }, sessionId, variant);
 
+    const aiInput = { shopId: shop.id, sessionId, shopName: shop.name, businessCategory: shop.businessCategory, rating, chips: labels, language };
     let source: "instant" | "ai" | "repeat" = "instant";
-    let draft = await claimDraft(owner, candidates, "instant", "instant-writer");
+    let draft: Awaited<ReturnType<typeof claimDraft>> = "used";
+    let triedAi = false;
+    if (wantsAi) {
+      triedAi = true;
+      // The shop's latest reviews go to the AI so it writes something different from them.
+      const recent = await prisma.reviewDraft.findMany({ where: { shopId: shop.id }, orderBy: { createdAt: "desc" }, take: 4, select: { generatedText: true } });
+      const ai = await writeAiDraft({ ...aiInput, avoid: recent.map((row) => row.generatedText) });
+      if (ai) {
+        draft = await claimDraft(owner, [ai.text], ai.provider, ai.model);
+        source = "ai";
+      }
+    }
     if (draft === "used") {
-      const ai = await writeAiDraft({ shopId: shop.id, sessionId, shopName: shop.name, businessCategory: shop.businessCategory, rating, chips: labels, language });
+      draft = await claimDraft(owner, candidates, "instant", "instant-writer");
+      source = "instant";
+    }
+    if (draft === "used") {
+      const ai = triedAi ? null : await writeAiDraft(aiInput);
       if (ai) {
         draft = await claimDraft(owner, [ai.text], ai.provider, ai.model);
         source = "ai";

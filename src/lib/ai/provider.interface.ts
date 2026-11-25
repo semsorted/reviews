@@ -21,6 +21,8 @@ export interface GenerateReviewDraftInput {
   businessCategory: string;
   rating: number;
   chips: string[];
+  /** Earlier reviews the new one must not repeat or closely copy. */
+  avoid?: string[];
   style: ReviewStyle;
   language: ReviewLanguage;
   temperature?: number;

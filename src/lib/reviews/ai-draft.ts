@@ -14,6 +14,7 @@ type AiDraftInput = {
   rating: number;
   chips: string[];
   language: ReviewLanguage;
+  avoid?: string[];
 };
 
 // Providers are tried in this order. A provider with no key is skipped, so adding a key is all it takes to switch one on.

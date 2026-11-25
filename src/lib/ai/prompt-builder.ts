@@ -29,7 +29,7 @@ function toneFor(rating: number): string {
 }
 
 export function buildReviewPrompts(input: GenerateReviewDraftInput): PromptPayload {
-  const { shopName, businessCategory, rating, chips, style, language } = input;
+  const { shopName, businessCategory, rating, chips, style, language, avoid } = input;
 
   const systemPrompt = `You help a real customer turn their own rating and selected topics into a Google review draft.
 
@@ -55,7 +55,7 @@ ${activity ? `Activity: the customer ${activity}\n` : ""}Rating: ${rating} out o
 ${rating <= 2 ? "Topics the customer wants improved:" : "Topics selected by the customer:"}
 ${chips.map((chip) => `- ${chip}${isPerson(chip) ? " (a person)" : ""}`).join("\n")}
 
-Tone: ${toneFor(rating)}
+${avoid?.length ? `Earlier reviews. Write something clearly different in structure and wording, and do not copy any of them:\n${avoid.map((text) => `- ${text}`).join("\n")}\n\n` : ""}Tone: ${toneFor(rating)}
 Length: ${STYLE_GUIDELINES[style]}
 Language: ${LANGUAGE_GUIDELINES[language]}`;
 

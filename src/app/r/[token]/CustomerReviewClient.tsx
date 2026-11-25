@@ -164,7 +164,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
     );
 
   // The draft is already on screen. This background check only swaps it if this shop has used it before.
-  const recordDraft = (nextRating: number, nextSelected: string[], nextVariant: number, nextLanguage: ReviewLanguage, shownText: string) => {
+  const recordDraft = (nextRating: number, nextSelected: string[], nextVariant: number, nextLanguage: ReviewLanguage, shownText: string, ai = false) => {
     if (syncTimer.current) clearTimeout(syncTimer.current);
     const syncId = ++syncRef.current;
     syncTimer.current = setTimeout(() => {
@@ -172,7 +172,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
         method: "POST",
         headers: { "Content-Type": "application/json" },
         keepalive: true,
-        body: JSON.stringify({ token, sessionId, rating: nextRating, variant: nextVariant, language: nextLanguage, chipIds: nextSelected }),
+        body: JSON.stringify({ token, sessionId, rating: nextRating, variant: nextVariant, language: nextLanguage, chipIds: nextSelected, ...(ai ? { ai: true } : {}) }),
       })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
@@ -244,7 +244,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
     setIsEdited(false);
     setIsStale(false);
     setCopyState("idle");
-    recordDraft(rating, selected, nextVariant, language, nextText);
+    recordDraft(rating, selected, nextVariant, language, nextText, true);
     void track("regenerate_click");
   };
 
