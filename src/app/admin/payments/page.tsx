@@ -47,7 +47,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
           title="Collected each month"
           points={data.monthPoints.map((point) => ({ label: point.label, values: { amount: point.amount } }))}
           series={SERIES}
-          format={formatInr}
+          prefix="₹"
           ariaLabel="Money collected in each of the last 6 months."
           emptyText="Nothing collected in the last 6 months."
         />
@@ -59,7 +59,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
           title="Collected each day"
           points={data.dayPoints.map((point) => ({ label: point.label, values: { amount: point.amount } }))}
           series={SERIES}
-          format={formatInr}
+          prefix="₹"
           ariaLabel="Money collected each day."
           emptyText="Nothing collected in this period."
         />

@@ -13,17 +13,19 @@ export function BarChart({
   title,
   points,
   series,
-  format = (value) => String(value),
+  prefix = "",
   ariaLabel,
   emptyText,
 }: {
   title: string;
   points: BarPoint[];
   series: BarSeries[];
-  format?: (value: number) => string;
+  /** Put before every number, for example "₹". A function cannot be passed from a server page. */
+  prefix?: string;
   ariaLabel: string;
   emptyText: string;
 }) {
+  const format = (value: number) => `${prefix}${value.toLocaleString("en-IN")}`;
   const plot = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<number | null>(null);
   const last = points.length - 1;
