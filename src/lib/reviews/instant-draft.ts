@@ -1,11 +1,14 @@
 import type { ReviewLanguage } from "@/lib/ai/provider.interface";
 import { hindiChip } from "./chip-hindi";
+import { isConfidence, isPerson, voiceFor } from "./category-voice";
 
 export interface InstantDraftInput {
   shopName: string;
   rating: number;
   chips: string[];
   language: ReviewLanguage;
+  /** The business type. It changes what the review says the customer did. */
+  category?: string;
 }
 
 type Tone = "strong" | "good" | "mixed" | "low";
@@ -124,18 +127,106 @@ export function seededRandom(seed: string): () => number {
   };
 }
 
-/** Writes a varied draft on the device, using only the rating and chips, so the customer never waits. */
+const PERSON_LINES: Record<ReviewLanguage, Record<"teach" | "plain", Record<Tone, Line[]>>> = {
+  en: {
+    teach: {
+      strong: [(p) => `I liked ${p}'s way of teaching.`, (p) => `${p}'s teaching stood out for me.`],
+      good: [(p) => `I liked ${p}'s way of teaching.`, (p) => `${p}'s teaching stood out for me.`],
+      mixed: [(p) => `${p}'s teaching was okay.`],
+      low: [(p) => `${p}'s teaching could be better.`],
+    },
+    plain: {
+      strong: [(p) => `I liked ${p}'s approach.`, (p) => `${p} stood out for me.`, (p) => `${p} made a good impression.`],
+      good: [(p) => `I liked ${p}'s approach.`, (p) => `${p} stood out for me.`, (p) => `${p} made a good impression.`],
+      mixed: [(p) => `${p}'s approach was okay.`],
+      low: [(p) => `${p}'s approach could be better.`],
+    },
+  },
+  hinglish: {
+    teach: {
+      strong: [(p) => `${p} ka padhane ka tareeka achha laga.`, (p) => `${p} ke padhane ka tareeka pasand aaya.`],
+      good: [(p) => `${p} ka padhane ka tareeka achha laga.`, (p) => `${p} ke padhane ka tareeka pasand aaya.`],
+      mixed: [(p) => `${p} ka padhane ka tareeka theek-thaak raha.`],
+      low: [(p) => `${p} ke padhane ke tareeke me improvement ki zarurat hai.`],
+    },
+    plain: {
+      strong: [(p) => `${p} ka tareeka achha laga.`, (p) => `${p} ne achha impression chhoda.`],
+      good: [(p) => `${p} ka tareeka achha laga.`, (p) => `${p} ne achha impression chhoda.`],
+      mixed: [(p) => `${p} ka tareeka theek-thaak raha.`],
+      low: [(p) => `${p} ke tareeke me improvement ki zarurat hai.`],
+    },
+  },
+  hi: {
+    teach: {
+      strong: [(p) => `${p} के पढ़ाने का तरीका अच्छा लगा।`, (p) => `${p} का पढ़ाने का अंदाज़ पसंद आया।`],
+      good: [(p) => `${p} के पढ़ाने का तरीका अच्छा लगा।`, (p) => `${p} का पढ़ाने का अंदाज़ पसंद आया।`],
+      mixed: [(p) => `${p} के पढ़ाने का तरीका ठीक-ठाक रहा।`],
+      low: [(p) => `${p} के पढ़ाने के तरीके में सुधार की ज़रूरत है।`],
+    },
+    plain: {
+      strong: [(p) => `${p} का तरीका अच्छा लगा।`, (p) => `${p} ने अच्छा प्रभाव छोड़ा।`],
+      good: [(p) => `${p} का तरीका अच्छा लगा।`, (p) => `${p} ने अच्छा प्रभाव छोड़ा।`],
+      mixed: [(p) => `${p} का तरीका ठीक-ठाक रहा।`],
+      low: [(p) => `${p} के तरीके में सुधार की ज़रूरत है।`],
+    },
+  },
+};
+
+// Only for a good rating: the customer picked the person and a confidence chip, so the person helped.
+const CONFIDENCE_LINES: Record<ReviewLanguage, Line[]> = {
+  en: [(p) => `${p} really helped me build my confidence.`, (p) => `${p} helped me a lot in building my confidence.`],
+  hinglish: [(p) => `${p} ne mera confidence build karne me kaafi help ki.`, (p) => `${p} ki wajah se mera confidence kaafi badha.`],
+  hi: [(p) => `${p} ने मेरा आत्मविश्वास बढ़ाने में काफ़ी मदद की।`, (p) => `${p} की वजह से मेरा आत्मविश्वास काफ़ी बढ़ा।`],
+};
+
+const personLine = (person: string, rating: number, language: ReviewLanguage, category: string | undefined, random: () => number) => {
+  const lines = PERSON_LINES[language][voiceFor(category)?.teaching ? "teach" : "plain"][toneFor(rating)];
+  return lines[Math.floor(random() * lines.length)](person);
+};
+
+/** One sentence for a chip the customer adds after the draft was already written or edited. */
+export function writeChipLine(chip: string, input: Omit<InstantDraftInput, "chips" | "shopName">, random: () => number = Math.random): string {
+  const { rating, language, category } = input;
+  if (isPerson(chip)) return personLine(chip, rating, language, category, random);
+  const topics = PHRASES[language][toneFor(rating)].topic;
+  return topics[Math.floor(random() * topics.length)](topicText(language === "hi" ? hindiChip(chip) : chip));
+}
+
+/** Writes a varied draft on the device, using only the rating, chips and business type, so the customer never waits. */
 export function writeInstantDraft(input: InstantDraftInput, random: () => number = Math.random): string {
-  const { shopName, rating, chips, language } = input;
+  const { shopName, rating, chips, language, category } = input;
   const pick = <T,>(items: T[]) => items[Math.floor(random() * items.length)];
   const phrases = PHRASES[language][toneFor(rating)];
-  const open = pick(phrases.open);
-  const topic = pick(phrases.topic);
-  const close = pick(phrases.close);
-  const ordered = chips
+  const open = pick(voiceFor(category)?.open[language] ?? phrases.open);
+  const oneByOne = random() >= 0.5;
+  // "Happy with my visit" is wrong for someone who studied or stayed, so a known business type skips those closings.
+  const closings = voiceFor(category) ? phrases.close.filter((line) => !/visit|विज़िट/i.test(line)) : phrases.close;
+  const close = pick(closings.length ? closings : phrases.close);
+
+  let people = chips.filter(isPerson);
+  const rest = chips.filter((chip) => !isPerson(chip));
+  const lines: string[] = [];
+  const confidence = rest.findIndex(isConfidence);
+  if (rating >= 4 && people.length && confidence >= 0) {
+    lines.push(pick(CONFIDENCE_LINES[language])(people[0]));
+    people = people.slice(1);
+    rest.splice(confidence, 1);
+  }
+  for (const person of people) lines.push(personLine(person, rating, language, category, random));
+
+  const topics = rest
     .map((chip) => ({ chip, key: random() }))
     .sort((a, b) => a.key - b.key)
     .map(({ chip }) => topicText(language === "hi" ? hindiChip(chip) : chip));
-
-  return [open(shopName), topic(joinTopics(ordered, language)), close].join(" ");
+  if (topics.length) {
+    if (oneByOne && topics.length > 1) {
+      const frames = [...phrases.topic].sort(() => random() - 0.5);
+      lines.push(...topics.map((topic, index) => frames[index % frames.length](topic)));
+    } else {
+      lines.push(pick(phrases.topic)(joinTopics(topics, language)));
+    }
+  }
+  // A chip is lower-cased to fit mid-sentence, so a sentence that starts with one needs its capital back.
+  const capital = (line: string) => (/^[a-z][a-z'-]*(?=\s)/.test(line) ? line.charAt(0).toUpperCase() + line.slice(1) : line);
+  return [open(shopName), ...lines.map(capital), close].join(" ");
 }

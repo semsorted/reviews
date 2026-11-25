@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type MouseE
 import { Check, RefreshCw, Star } from "lucide-react";
 import type { ReviewLanguage } from "@/lib/ai/provider.interface";
 import { copyDraft, copyViaCommand } from "@/lib/reviews/copy-draft";
-import { seededRandom, writeInstantDraft } from "@/lib/reviews/instant-draft";
+import { seededRandom, writeInstantDraft, writeChipLine } from "@/lib/reviews/instant-draft";
 import { readReviewDone, saveReviewDone, type ReviewDone } from "@/lib/reviews/review-done";
 import { MAX_CHIPS, MIN_CHIPS } from "@/lib/reviews/rules";
 import { cn } from "@/lib/utils";
@@ -158,6 +158,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
         rating: nextRating,
         chips: nextSelected.map((id) => chips.find((chip) => chip.id === id)!.label),
         language: nextLanguage,
+        category: shop.businessCategory,
       },
       seededRandom(`${sessionId}:${nextVariant}`)
     );
@@ -209,13 +210,18 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
     window.location.assign(shop.googleReviewUrl);
   };
 
-  const applySelection = (nextRating: number, nextSelected: string[], nextLanguage = language) => {
+  const applySelection = (nextRating: number, nextSelected: string[], nextLanguage = language, added?: string) => {
     setRating(nextRating);
     setSelected(nextSelected);
     setLanguage(nextLanguage);
     setCopyState("idle");
     if (isEdited) {
-      setIsStale(true);
+      // A new chip adds one sentence to the customer's own text. Anything else waits for the Update button.
+      const label = added && hasDraft ? chips.find((chip) => chip.id === added)?.label : undefined;
+      if (label) {
+        const line = writeChipLine(label, { rating: nextRating, language: nextLanguage, category: shop.businessCategory }, seededRandom(`${sessionId}:${added}`));
+        setDraftText((current) => `${current.trimEnd()} ${line}`);
+      } else setIsStale(true);
       return;
     }
     const ready = nextRating > 0 && nextSelected.length >= MIN_CHIPS;
@@ -226,7 +232,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
 
   const toggleChip = (id: string) => {
     if (selected.includes(id)) applySelection(rating, selected.filter((chipId) => chipId !== id));
-    else if (!atLimit) applySelection(rating, [...selected, id]);
+    else if (!atLimit) applySelection(rating, [...selected, id], language, id);
   };
 
   const changeWording = () => {
