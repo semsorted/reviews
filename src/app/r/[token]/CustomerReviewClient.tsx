@@ -7,6 +7,7 @@ import { copyDraft, copyViaCommand } from "@/lib/reviews/copy-draft";
 import { seededRandom, writeInstantDraft, writeChipLine } from "@/lib/reviews/instant-draft";
 import { readReviewDone, saveReviewDone, type ReviewDone } from "@/lib/reviews/review-done";
 import { MAX_CHIPS, MIN_CHIPS } from "@/lib/reviews/rules";
+import { nextFreshVariant } from "@/lib/reviews/unique-draft";
 import { cn } from "@/lib/utils";
 import { COPY } from "./copy";
 
@@ -22,7 +23,8 @@ export interface CustomerReviewClientProps {
     primaryColor: string;
     googleReviewUrl: string;
   };
-  chips: { id: string; label: string }[];
+  /** label is the chip as saved, used to write the review. name is how it is shown today. */
+  chips: { id: string; label: string; name: string }[];
 }
 
 const LANGUAGES: { id: ReviewLanguage; label: string }[] = [
@@ -122,6 +124,8 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
   const draftRef = useRef<HTMLElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const didRevealDraft = useRef(false);
+  // Every review this customer has seen, so Change wording always shows a new one.
+  const seenRef = useRef(new Set<string>());
 
   const copy = COPY;
   const hasDraft = draftText.trim().length > 0;
@@ -172,12 +176,25 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
         method: "POST",
         headers: { "Content-Type": "application/json" },
         keepalive: true,
-        body: JSON.stringify({ token, sessionId, rating: nextRating, variant: nextVariant, language: nextLanguage, chipIds: nextSelected, ...(ai ? { ai: true } : {}) }),
+        body: JSON.stringify({
+          token,
+          sessionId,
+          rating: nextRating,
+          variant: nextVariant,
+          language: nextLanguage,
+          chipIds: nextSelected,
+          seen: [...seenRef.current].filter((text) => text !== shownText).slice(-20),
+          ...(ai ? { ai: true } : {}),
+        }),
       })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (syncId === syncRef.current && data?.text) {
-            setDraftText((current) => (current === shownText ? data.text : current));
+            setDraftText((current) => {
+              if (current !== shownText) return current;
+              if (data.text !== shownText) seenRef.current.add(shownText);
+              return data.text;
+            });
           }
           return data?.draftId ?? null;
         })
@@ -237,9 +254,9 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
 
   const changeWording = () => {
     if (!isReady) return;
-    const nextVariant = variant + 1;
+    if (draftText.trim()) seenRef.current.add(draftText);
+    const { variant: nextVariant, text: nextText } = nextFreshVariant((next) => writeDraft(rating, selected, next, language), variant + 1, seenRef.current);
     setVariant(nextVariant);
-    const nextText = writeDraft(rating, selected, nextVariant, language);
     setDraftText(nextText);
     setIsEdited(false);
     setIsStale(false);
@@ -401,7 +418,7 @@ export default function CustomerReviewClient({ token, sessionId, language: defau
                 >
                   <input type="checkbox" checked={isSelected} disabled={isDisabled} onChange={() => toggleChip(chip.id)} className="sr-only" />
                   {isSelected && <Check aria-hidden className="size-4" strokeWidth={2.5} />}
-                  {chip.label}
+                  {chip.name}
                 </label>
               );
             })}

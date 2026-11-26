@@ -134,6 +134,7 @@ model ReviewChip {
   label     String
   sortOrder Int      @default(0) @map("sort_order")
   isActive  Boolean  @default(true) @map("is_active")
+  isPinned  Boolean  @default(false) @map("is_pinned")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 

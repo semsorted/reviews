@@ -1,6 +1,8 @@
 export const MIN_CHIPS = 2;
 export const MAX_CHIPS = 4;
-export const MAX_ACTIVE_CHIPS = 12;
+export const MAX_ACTIVE_CHIPS = 30;
+/** Chips a customer sees at once. A business with more rotates the unpinned ones daily. */
+export const VISIBLE_CHIPS = 12;
 export const MAX_DRAFTS_PER_SESSION = 5;
 export const MAX_AI_DRAFTS_PER_SESSION = 4;
 export const MAX_AI_DRAFTS_PER_SHOP_PER_DAY = 100;

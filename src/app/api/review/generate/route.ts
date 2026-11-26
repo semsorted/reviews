@@ -12,7 +12,9 @@ const RecordDraftSchema = z.object({
   token: z.string().min(8).max(64),
   sessionId: uuidSchema,
   rating: z.number().int().min(1).max(5),
-  variant: z.number().int().min(0).max(999).default(0),
+  variant: z.number().int().min(0).max(99_999).default(0),
+  /** Reviews this customer already saw, so Change wording never brings one back. */
+  seen: z.array(z.string().max(1000)).max(20).default([]),
   /** "Change wording": ask an AI for a fresh review before falling back to the local writer. */
   ai: z.boolean().optional(),
   language: z.enum(["en", "hi", "hinglish"]).optional(),
@@ -62,7 +64,8 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Please choose a rating and 2 to 4 options." }, { status: 400 });
   }
-  const { token, sessionId, rating, variant, chipIds, language: pickedLanguage, ai: wantsAi } = parsed.data;
+  const { token, sessionId, rating, variant, chipIds, language: pickedLanguage, ai: wantsAi, seen } = parsed.data;
+  const seenSet = new Set(seen);
 
   try {
     const [qr, session] = await Promise.all([
@@ -100,7 +103,10 @@ export async function POST(request: NextRequest) {
     const labels = chipIds.map((id) => shop.chips.find((chip) => chip.id === id)!.label);
     const language = pickedLanguage ?? toReviewLanguage(shop.defaultLanguage);
     const owner = { shopId: shop.id, sessionId, rating, customerNotes: `Rating ${rating}: ${labels.join(", ")}`, language };
-    const candidates = localCandidates({ shopName: shop.name, rating, chips: labels, language, category: shop.businessCategory }, sessionId, variant);
+    const all = localCandidates({ shopName: shop.name, rating, chips: labels, language, category: shop.businessCategory }, sessionId, variant);
+    const unseen = all.filter((text) => !seenSet.has(text));
+    const candidates = unseen.length ? unseen : all;
+    const fresh = (ai: Awaited<ReturnType<typeof writeAiDraft>>) => (ai && !seenSet.has(ai.text) ? ai : null);
 
     const aiInput = { shopId: shop.id, sessionId, shopName: shop.name, businessCategory: shop.businessCategory, rating, chips: labels, language };
     let source: "instant" | "ai" | "repeat" = "instant";
@@ -110,7 +116,7 @@ export async function POST(request: NextRequest) {
       triedAi = true;
       // The shop's latest reviews go to the AI so it writes something different from them.
       const recent = await prisma.reviewDraft.findMany({ where: { shopId: shop.id }, orderBy: { createdAt: "desc" }, take: 4, select: { generatedText: true } });
-      const ai = await writeAiDraft({ ...aiInput, avoid: recent.map((row) => row.generatedText) });
+      const ai = fresh(await writeAiDraft({ ...aiInput, avoid: [...recent.map((row) => row.generatedText), ...seen.slice(-4)] }));
       if (ai) {
         draft = await claimDraft(owner, [ai.text], ai.provider, ai.model);
         source = "ai";
@@ -121,7 +127,7 @@ export async function POST(request: NextRequest) {
       source = "instant";
     }
     if (draft === "used") {
-      const ai = triedAi ? null : await writeAiDraft(aiInput);
+      const ai = triedAi ? null : fresh(await writeAiDraft(aiInput));
       if (ai) {
         draft = await claimDraft(owner, [ai.text], ai.provider, ai.model);
         source = "ai";

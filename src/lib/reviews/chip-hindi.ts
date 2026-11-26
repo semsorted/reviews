@@ -19,7 +19,12 @@ const HINDI: Record<string, string> = {
   "Waiting area": "वेटिंग एरिया", "Waiting time": "इंतज़ार का समय", "Warden and staff": "वार्डन और स्टाफ़", "Warranty": "वारंटी", "Warranty support": "वारंटी में मदद", "Waxing": "वैक्सिंग", "Weighing accuracy": "सही तौल", "Wheel alignment": "व्हील अलाइनमेंट", "Wi-Fi": "वाई-फ़ाई", "Wine and drinks": "वाइन और ड्रिंक्स", "Work quality": "काम की क्वालिटी", "Work speed": "काम की रफ़्तार", "Workmanship": "कारीगरी", "Workout space": "वर्कआउट की जगह", "Workspace": "काम करने की जगह",
 };
 
-const BY_LOWERCASE = new Map(Object.entries(HINDI).map(([label, hindi]) => [label.toLowerCase(), hindi]));
+const SPOKEN_ENGLISH: Record<string, string> = {
+  "Confidence": "आत्मविश्वास", "Fluency": "फ़्लुएंसी", "Pronunciation": "उच्चारण", "Group discussion": "ग्रुप डिस्कशन", "Interview preparation": "इंटरव्यू की तैयारी",
+  "Grammar": "ग्रामर", "Vocabulary": "शब्दावली", "Doubt clearing": "डाउट क्लियर करना", "Batchmates": "बैचमेट्स", "Classroom environment": "क्लास का माहौल", "Progress tracking": "प्रगति पर नज़र",
+};
+
+const BY_LOWERCASE = new Map(Object.entries({ ...HINDI, ...SPOKEN_ENGLISH }).map(([label, hindi]) => [label.toLowerCase(), hindi]));
 
 /** A chip the admin typed by hand has no translation, so it stays as typed. */
 export const hindiChip = (label: string) => BY_LOWERCASE.get(label.trim().toLowerCase()) ?? label;

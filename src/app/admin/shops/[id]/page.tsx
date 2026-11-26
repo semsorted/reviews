@@ -192,7 +192,7 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
             <ChipManager
               shopId={shop.id}
               shopType={shop.businessCategory}
-              chips={shop.chips.map((chip) => ({ id: chip.id, label: chip.label, isActive: chip.isActive }))}
+              chips={shop.chips.map((chip) => ({ id: chip.id, label: chip.label, isActive: chip.isActive, isPinned: chip.isPinned }))}
             />
           </div>
           <aside aria-labelledby="details-title">

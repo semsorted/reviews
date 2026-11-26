@@ -14,9 +14,9 @@ const voice = (hint: string, en: Line[], hinglish: Line[], hi: Line[], teaching 
 
 const STUDY = voice(
   "studied or took classes here",
-  [(s) => `I studied at ${s}.`, (s) => `I took classes at ${s}.`, (s) => `I learned at ${s}.`],
-  [(s) => `Maine ${s} se padhai ki.`, (s) => `Maine ${s} me padhai ki.`, (s) => `${s} me padhai ka experience raha.`],
-  [(s) => `मैंने ${s} से पढ़ाई की।`, (s) => `मैंने ${s} में पढ़ाई की।`, (s) => `${s} में पढ़ाई का अनुभव रहा।`],
+  [(s) => `I studied at ${s}.`, (s) => `I took classes at ${s}.`, (s) => `I learned at ${s}.`, (s) => `I joined ${s} for classes.`, (s) => `I have been taking classes at ${s}.`, (s) => `I enrolled at ${s} and studied there.`],
+  [(s) => `Maine ${s} se padhai ki.`, (s) => `Maine ${s} me padhai ki.`, (s) => `${s} me padhai ka experience raha.`, (s) => `Maine ${s} me classes join ki.`, (s) => `${s} me classes ka experience raha.`, (s) => `Maine ${s} me admission lekar padhai ki.`],
+  [(s) => `मैंने ${s} से पढ़ाई की।`, (s) => `मैंने ${s} में पढ़ाई की।`, (s) => `${s} में पढ़ाई का अनुभव रहा।`, (s) => `मैंने ${s} में क्लासेज़ जॉइन कीं।`, (s) => `${s} में क्लासेज़ का अनुभव रहा।`, (s) => `मैंने ${s} में एडमिशन लेकर पढ़ाई की।`],
   true,
 );
 const CLOTHES = voice(

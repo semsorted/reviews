@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { seededRandom, writeInstantDraft } from "@/lib/reviews/instant-draft";
-import { firstUnused, isSafeAiDraft, localCandidates } from "@/lib/reviews/unique-draft";
+import { firstUnused, isSafeAiDraft, localCandidates, nextFreshVariant } from "@/lib/reviews/unique-draft";
 
 const input = { shopName: "Sunrise Bakery", rating: 5, chips: ["Taste", "Service"], language: "hi" as const };
 const sessionId = "22222222-2222-4222-8222-222222222222";
@@ -22,6 +22,21 @@ describe("localCandidates", () => {
     const list = localCandidates(input, sessionId, 0);
     expect(new Set(list).size).toBe(list.length);
     expect(list.length).toBeGreaterThan(10);
+  });
+});
+
+describe("nextFreshVariant", () => {
+  it("never repeats a review in ten Change wording clicks, even with only 24 wordings", () => {
+    const chips = { shopName: "Hi-tech Academy", rating: 5, chips: ["B.L. Sir", "Confidence building"], language: "en" as const, category: "Language and spoken English" };
+    const write = (variant: number) => writeInstantDraft(chips, seededRandom(`${sessionId}:${variant}`));
+    const seen = new Set([write(0)]);
+    let variant = 0;
+    for (let click = 0; click < 10; click++) {
+      const next = nextFreshVariant(write, variant + 1, seen);
+      expect(seen.has(next.text)).toBe(false);
+      seen.add(next.text);
+      variant = next.variant;
+    }
   });
 });
 

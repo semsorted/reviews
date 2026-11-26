@@ -2,11 +2,11 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, Check, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Pencil, Pin, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { chipsForShopType } from "@/lib/reviews/catalog";
-import { MAX_ACTIVE_CHIPS, MIN_CHIPS } from "@/lib/reviews/rules";
+import { MAX_ACTIVE_CHIPS, MIN_CHIPS, VISIBLE_CHIPS } from "@/lib/reviews/rules";
 import { cn } from "@/lib/utils";
 import { ConfirmButton } from "./ConfirmButton";
 import { adminRequest } from "./request";
@@ -15,6 +15,7 @@ interface Chip {
   id: string;
   label: string;
   isActive: boolean;
+  isPinned: boolean;
 }
 
 const iconButton = "flex size-11 items-center justify-center rounded-full text-moss hover:bg-ink/5 hover:text-ink disabled:opacity-30";
@@ -69,6 +70,7 @@ export function ChipManager({ shopId, shopType, chips }: { shopId: string; shopT
       </div>
       <p className="mt-1 text-sm text-moss">
         Customers tap 2 to 4 of these. Keep at least {MIN_CHIPS} live.
+        {activeCount > VISIBLE_CHIPS && ` Customers see ${VISIBLE_CHIPS} a day: every pinned chip, and the rest change daily.`}
       </p>
 
       <ul className="mt-4 divide-y divide-line rounded-xl bg-paper">
@@ -98,6 +100,17 @@ export function ChipManager({ shopId, shopType, chips }: { shopId: string; shopT
                 </button>
                 <button type="button" aria-label={`Move ${chip.label} down`} disabled={isBusy || index === chips.length - 1} onClick={() => move(index, 1)} className={iconButton}>
                   <ArrowDown aria-hidden className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={chip.isPinned}
+                  aria-label={`Show ${chip.label} every day`}
+                  title={chip.isPinned ? "Shown every day" : "Pin to show every day"}
+                  disabled={isBusy}
+                  onClick={() => run(`${base}/${chip.id}`, "PATCH", { isPinned: !chip.isPinned })}
+                  className={cn(iconButton, chip.isPinned && "text-pine")}
+                >
+                  <Pin aria-hidden className={cn("size-4", chip.isPinned && "fill-current")} />
                 </button>
                 <button type="button" aria-label={`Rename ${chip.label}`} onClick={() => setEditing({ id: chip.id, label: chip.label })} className={iconButton}>
                   <Pencil aria-hidden className="size-4" />

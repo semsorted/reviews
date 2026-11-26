@@ -196,6 +196,18 @@ describe("POST /api/review/generate", () => {
     expect(mocks.aiWrite).toHaveBeenCalledTimes(2);
   });
 
+  it("never gives back a review this customer already saw when AI fails", async () => {
+    mocks.aiWrite.mockRejectedValue(new Error("boom"));
+    const data = await (await record(post("/api/review/generate", { ...body, ai: true, seen: [seen[0], seen[1]] }))).json();
+    expect(data).toMatchObject({ text: seen[2], source: "instant" });
+  });
+
+  it("tells AI to avoid the reviews this customer already saw", async () => {
+    mocks.draftFindMany.mockImplementationOnce(async () => []);
+    await record(post("/api/review/generate", { ...body, ai: true, seen: ["seen before"] }));
+    expect(mocks.aiWrite.mock.calls[0][0].avoid).toEqual(["seen before"]);
+  });
+
   it("does not call AI for a normal draft", async () => {
     await record(post("/api/review/generate", body));
     expect(mocks.aiWrite).not.toHaveBeenCalled();

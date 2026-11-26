@@ -9,8 +9,8 @@ import { MIN_CHIPS } from "@/lib/reviews/rules";
 type Context = { params: Promise<{ id: string; chipId: string }> };
 
 const UpdateChipSchema = z
-  .object({ label: chipLabelSchema.optional(), isActive: z.boolean().optional() })
-  .refine((body) => body.label !== undefined || body.isActive !== undefined);
+  .object({ label: chipLabelSchema.optional(), isActive: z.boolean().optional(), isPinned: z.boolean().optional() })
+  .refine((body) => body.label !== undefined || body.isActive !== undefined || body.isPinned !== undefined);
 
 const tooFewChips = () => conflict(`Keep at least ${MIN_CHIPS} active chips so printed QR codes keep working.`);
 
@@ -51,7 +51,7 @@ export async function PATCH(request: NextRequest, { params }: Context) {
       return tx.reviewChip.update({
         where: { id: chipId },
         data: body,
-        select: { id: true, label: true, sortOrder: true, isActive: true },
+        select: { id: true, label: true, sortOrder: true, isActive: true, isPinned: true },
       });
     });
     if (updated instanceof NextResponse) return updated;

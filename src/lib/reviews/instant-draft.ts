@@ -1,4 +1,5 @@
 import type { ReviewLanguage } from "@/lib/ai/provider.interface";
+import { chipFamily } from "./chip-families";
 import { hindiChip } from "./chip-hindi";
 import { isConfidence, isPerson, voiceFor } from "./category-voice";
 
@@ -106,6 +107,15 @@ function topicText(chip: string): string {
   return /[A-Z]/.test(firstWord.slice(1)) ? chip : chip.charAt(0).toLowerCase() + chip.slice(1);
 }
 
+/** How a chip reads inside a topic template, in the review's language. */
+const topicFor = (chip: string, language: ReviewLanguage) => topicText(chipFamily(chip)?.topic?.[language] ?? (language === "hi" ? hindiChip(chip) : chip));
+
+/** A chip's own sentences for a 4 or 5 star review, when it has them. */
+const ownLines = (chip: string, rating: number, language: ReviewLanguage) => (rating >= 4 ? chipFamily(chip)?.good[language] : undefined);
+
+/** Lines that credit a person for this chip, at 4 or 5 stars. */
+const personLinesFor = (chip: string, language: ReviewLanguage) => chipFamily(chip)?.person?.[language] ?? (isConfidence(chip) ? CONFIDENCE_LINES[language] : undefined);
+
 function joinTopics(topics: string[], language: ReviewLanguage): string {
   if (topics.length < 2) return topics.join("");
   return `${topics.slice(0, -1).join(", ")}${LIST_JOINER[language]}${topics.at(-1)}`;
@@ -188,8 +198,10 @@ const personLine = (person: string, rating: number, language: ReviewLanguage, ca
 export function writeChipLine(chip: string, input: Omit<InstantDraftInput, "chips" | "shopName">, random: () => number = Math.random): string {
   const { rating, language, category } = input;
   if (isPerson(chip)) return personLine(chip, rating, language, category, random);
+  const own = ownLines(chip, rating, language);
+  if (own) return own[Math.floor(random() * own.length)];
   const topics = PHRASES[language][toneFor(rating)].topic;
-  return topics[Math.floor(random() * topics.length)](topicText(language === "hi" ? hindiChip(chip) : chip));
+  return topics[Math.floor(random() * topics.length)](topicFor(chip, language));
 }
 
 /** Writes a varied draft on the device, using only the rating, chips and business type, so the customer never waits. */
@@ -206,26 +218,35 @@ export function writeInstantDraft(input: InstantDraftInput, random: () => number
   let people = chips.filter(isPerson);
   const rest = chips.filter((chip) => !isPerson(chip));
   const lines: string[] = [];
-  const confidence = rest.findIndex(isConfidence);
-  if (rating >= 4 && people.length && confidence >= 0) {
-    lines.push(pick(CONFIDENCE_LINES[language])(people[0]));
+  // A person picked with a chip like Confidence gets the credit for it in one sentence.
+  const joint = rating >= 4 && people.length ? rest.findIndex((chip) => personLinesFor(chip, language)) : -1;
+  if (joint >= 0) {
+    lines.push(pick(personLinesFor(rest[joint], language)!)(people[0]));
     people = people.slice(1);
-    rest.splice(confidence, 1);
+    rest.splice(joint, 1);
   }
   for (const person of people) lines.push(personLine(person, rating, language, category, random));
 
+  const own = rest.filter((chip) => ownLines(chip, rating, language));
   const topics = rest
+    .filter((chip) => !own.includes(chip))
     .map((chip) => ({ chip, key: random() }))
     .sort((a, b) => a.key - b.key)
-    .map(({ chip }) => topicText(language === "hi" ? hindiChip(chip) : chip));
+    .map(({ chip }) => topicFor(chip, language));
+  const topicLines: string[] = [];
   if (topics.length) {
     if (oneByOne && topics.length > 1) {
       const frames = [...phrases.topic].sort(() => random() - 0.5);
-      lines.push(...topics.map((topic, index) => frames[index % frames.length](topic)));
+      topicLines.push(...topics.map((topic, index) => frames[index % frames.length](topic)));
     } else {
-      lines.push(pick(phrases.topic)(joinTopics(topics, language)));
+      topicLines.push(pick(phrases.topic)(joinTopics(topics, language)));
     }
   }
+  if (own.length) {
+    // Chips with their own sentences mix in with the template lines in any order.
+    const mixed = [...own.map((chip) => pick(ownLines(chip, rating, language)!)), ...topicLines];
+    lines.push(...mixed.map((line) => ({ line, key: random() })).sort((a, b) => a.key - b.key).map(({ line }) => line));
+  } else lines.push(...topicLines);
   // A chip is lower-cased to fit mid-sentence, so a sentence that starts with one needs its capital back.
   const capital = (line: string) => (/^[a-z][a-z'-]*(?=[\s,])/.test(line) ? line.charAt(0).toUpperCase() + line.slice(1) : line);
   return [open(shopName), ...lines.map(capital), close].join(" ");

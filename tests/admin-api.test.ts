@@ -28,6 +28,7 @@ import * as chip from "@/app/api/admin/shops/[id]/chips/[chipId]/route";
 import * as qrs from "@/app/api/admin/shops/[id]/qr-codes/route";
 import * as qr from "@/app/api/admin/shops/[id]/qr-codes/[qrId]/route";
 import * as download from "@/app/api/admin/shops/[id]/qr-codes/[qrId]/download/route";
+import { MAX_ACTIVE_CHIPS } from "@/lib/reviews/rules";
 
 const shopId = "11111111-1111-4111-8111-111111111111";
 const chipId = "44444444-4444-4444-8444-444444444441";
@@ -137,7 +138,7 @@ describe("chips", () => {
   });
 
   it("stops at the active chip limit", async () => {
-    db.reviewChip.count.mockResolvedValue(12);
+    db.reviewChip.count.mockResolvedValue(MAX_ACTIVE_CHIPS);
     expect((await chips.POST(req("POST", { label: "Parking" }), shopParams)).status).toBe(409);
   });
 

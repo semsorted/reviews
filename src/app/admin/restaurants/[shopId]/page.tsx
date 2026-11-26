@@ -131,7 +131,7 @@ async function ReviewSection({ shopId }: { shopId: string }) {
     select: {
       id: true, name: true, businessCategory: true, googleReviewUrl: true, defaultLanguage: true, logoUrl: true, primaryColor: true, surfaceColor: true, accentColor: true, isActive: true,
       qrCodes: { orderBy: { createdAt: "asc" }, select: { id: true, name: true, publicToken: true, scanCount: true, isActive: true } },
-      chips: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true, label: true, isActive: true } },
+      chips: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true, label: true, isActive: true, isPinned: true } },
     },
   });
   return (

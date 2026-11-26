@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import type { Metadata, Viewport } from "next";
 import { prisma } from "@/lib/prisma";
 import { posterFor } from "@/lib/qr/poster";
+import { chipsForDay, indiaDay } from "@/lib/reviews/chip-day";
 import { toReviewLanguage } from "@/lib/reviews/instant-draft";
 import { recordScan } from "@/lib/reviews/record-scan";
 import { MIN_CHIPS } from "@/lib/reviews/rules";
@@ -33,7 +34,7 @@ const getReviewQr = cache(async (token: string) => {
           chips: {
             where: { isActive: true },
             orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-            select: { id: true, label: true },
+            select: { id: true, label: true, isPinned: true },
           },
         },
       },
@@ -81,7 +82,7 @@ export default async function CustomerReviewPage(props: { params: Promise<{ toke
         primaryColor: shop.primaryColor,
         googleReviewUrl: shop.googleReviewUrl,
       }}
-      chips={shop.chips}
+      chips={chipsForDay(shop.chips, shop.id, indiaDay()).map(({ id, label, name }) => ({ id, label, name }))}
     />
   );
 }

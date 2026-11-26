@@ -13,6 +13,15 @@ export function localCandidates(input: InstantDraftInput, sessionId: string, var
   return [...new Set(seeds.map((seed) => writeInstantDraft(input, seededRandom(seed))))];
 }
 
+/** "Change wording": the next variant whose review this customer has not seen yet. Small chip pools repeat often otherwise. */
+export function nextFreshVariant(write: (variant: number) => string, from: number, seen: ReadonlySet<string>): { variant: number; text: string } {
+  for (let variant = from; variant < from + LOCAL_CANDIDATES; variant++) {
+    const text = write(variant);
+    if (!seen.has(text)) return { variant, text };
+  }
+  return { variant: from, text: write(from) };
+}
+
 export function firstUnused(candidates: string[], used: Iterable<string>): string | undefined {
   const taken = new Set(used);
   return candidates.find((text) => !taken.has(text));
