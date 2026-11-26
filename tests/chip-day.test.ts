@@ -37,6 +37,14 @@ describe("chipsForDay", () => {
     expect(chipNameForDay("B.L. Sir", days[0])).toBe("B.L. Sir");
   });
 
+  it("gives a pinned chip a new name every day", () => {
+    for (const label of ["Confidence building", "Hesitation", "Public speaking"]) {
+      const week = days.concat(["2026-12-05", "2026-12-06", "2026-12-07"]).map((day) => chipNameForDay(label, day));
+      for (let i = 1; i < week.length; i++) expect(week[i]).not.toBe(week[i - 1]);
+      expect(new Set(week).size).toBe(7);
+    }
+  });
+
   it("uses the date in India", () => {
     expect(indiaDay(new Date("2026-12-01T19:00:00Z"))).toBe("2026-12-02");
     expect(indiaDay(new Date("2026-12-01T18:00:00Z"))).toBe("2026-12-01");

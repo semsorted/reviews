@@ -13,7 +13,7 @@ export type ChipFamily = {
 };
 
 const CONFIDENCE: ChipFamily = {
-  names: ["Confidence building", "Confidence", "Self-confidence", "Confidence boost"],
+  names: ["Confidence building", "Boost confidence", "Self-confidence", "Confidence boost", "Built my confidence", "Confidence in speaking", "Gained confidence"],
   good: {
     en: ["My confidence has grown a lot since joining.", "I feel far more confident speaking English now.", "The classes really helped build my confidence.", "My self-confidence is much better than before."],
     hinglish: ["Join karne ke baad mera confidence kaafi badha.", "Ab English bolte waqt confidence kaafi zyada rehta hai.", "Classes se mera confidence achha khasa build hua.", "Pehle se kaafi zyada self-confidence aa gaya hai."],
@@ -28,9 +28,9 @@ const CONFIDENCE: ChipFamily = {
 
 const FAMILIES: Record<string, ChipFamily> = {
   "confidence building": CONFIDENCE,
-  confidence: { ...CONFIDENCE, names: ["Confidence", "Self-confidence", "Confidence boost", "Confidence building"] },
+  confidence: { ...CONFIDENCE, names: ["Confidence", "Boost confidence", "Self-confidence", "Confidence boost", "Built my confidence", "Confidence in speaking", "Gained confidence"] },
   hesitation: {
-    names: ["Hesitation", "No more hesitation", "Speaking without hesitation"],
+    names: ["Hesitation", "No more hesitation", "Speaking without hesitation", "Hesitation removed", "Overcame hesitation", "Less hesitation", "Free from hesitation"],
     good: {
       en: ["My hesitation in speaking English is mostly gone.", "I no longer hesitate before speaking in English.", "The classes helped me get over my hesitation.", "Speaking English without hesitation feels natural now."],
       hinglish: ["English bolne me jo jhijhak thi, wo kaafi had tak khatam ho gayi.", "Ab English bolne se pehle hesitation nahi hoti.", "Classes ki wajah se meri hesitation door hui.", "Ab bina jhijhak English bolna aasaan lagta hai."],
@@ -44,7 +44,7 @@ const FAMILIES: Record<string, ChipFamily> = {
     topic: { en: "work on hesitation", hinglish: "hesitation par kaam", hi: "झिझक दूर करने पर काम" },
   },
   "public speaking": {
-    names: ["Public speaking", "Stage confidence", "Speaking in front of people"],
+    names: ["Public speaking", "Stage confidence", "Speaking in front of people", "Speaking on stage", "Public speaking skills", "Speaking to a group", "Presentation skills"],
     good: {
       en: ["Speaking in front of a group feels much easier now.", "The public speaking practice made a real difference.", "Standing up and speaking in front of others is no longer scary.", "My stage confidence has improved a lot."],
       hinglish: ["Ab logon ke saamne bolna kaafi aasaan lagta hai.", "Public speaking ki practice se kaafi fark pada.", "Ab sabke saamne khade hokar bolne me dar nahi lagta.", "Stage par bolne ka confidence kaafi improve hua."],

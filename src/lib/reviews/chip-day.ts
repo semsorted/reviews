@@ -5,11 +5,13 @@ import { VISIBLE_CHIPS } from "./rules";
 /** Today's date in India, so the chips change at midnight for customers, not at UTC midnight. */
 export const indiaDay = (now = new Date()) => new Date(now.getTime() + 330 * 60_000).toISOString().slice(0, 10);
 
-/** The name a chip shows today: one of its family's names, the same for everyone all day. */
+/** The name a chip shows today. Names take turns, so it changes every day and every name comes up. */
 export function chipNameForDay(label: string, day: string): string {
   const names = chipFamily(label)?.names;
   if (!names) return label;
-  return names[Math.floor(seededRandom(`${label.toLowerCase()}:${day}`)() * names.length)];
+  const dayNumber = Math.floor(Date.parse(day) / 86_400_000);
+  const offset = Math.floor(seededRandom(label.toLowerCase())() * names.length);
+  return names[(dayNumber + offset) % names.length];
 }
 
 /**
